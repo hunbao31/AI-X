@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  student
+  teacher
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(student)
+  createdAt    DateTime @default(now())
+
+  attempts         Attempt[]
+  masteries        Mastery[]
+  gamification     Gamification?
+  createdExercises Exercise[]
+}
+
+enum ExerciseType {
+  mcq
+  text
+}
+
+enum Difficulty {
+  easy
+  medium
+  hard
+}
+
+model Exercise {
+  id         String       @id @default(uuid())
+  question   String
+  type       ExerciseType
+  options    Json?
+  answer     String
+  difficulty Difficulty
+  topic      String
+  createdBy  String
+  createdAt  DateTime     @default(now())
+
+  creator User @relation(fields: [createdBy], references: [id])
+}
+
+enum UnderstandingLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// One row per submitted answer. Didn't exist before Step 11 — the
+// AnalyticsStore counters from Step 8 are replaced by querying this table
+// directly, rather than keeping a second, easily-divergent source of truth.
+model Attempt {
+  id                 String             @id @default(uuid())
+  userId             String
+  exerciseId         String
+  topic              String
+  answer             String
+  correct            Boolean
+  understandingLevel UnderstandingLevel
+  createdAt          DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// One row per user+topic, same shape MasteryStore used to hold in memory.
+model Mastery {
+  id       String @id @default(uuid())
+  userId   String
+  topic    String
+  score    Int
+  attempts Int
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, topic])
+}
+
+// One row per user — mirrors GamificationStore's in-memory record.
+model Gamification {
+  id             String  @id @default(uuid())
+  userId         String  @unique
+  xp             Int
+  level          Int
+  streak         Int
+  lastActiveDate String?
+
+  user User @relation(fields: [userId], references: [id])
+}
