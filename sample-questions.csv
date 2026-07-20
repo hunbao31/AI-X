@@ -1,0 +1,12 @@
+question,optionA,optionB,optionC,optionD,correctAnswer,topic,difficulty,tags
+What is 7 x 8?,54,56,64,48,B,arithmetic,easy,multiplication
+Solve for $x$: $2x + 6 = 14$,2,3,4,5,C,algebra,easy,equations
+What is $\sqrt{144}$?,10,11,12,14,12,algebra,easy,roots
+"Simplify: $\frac{x^2 - 9}{x - 3}$ for $x \neq 3$",$x + 3$,$x - 3$,$x + 9$,$x - 9$,A,algebra,medium,factoring
+What is 15% of 200?,25,30,35,40,30,percentages,medium,
+What is $\frac{d}{dx}\left(x^3\right)$?,$x^2$,$2x^2$,$3x^2$,$3x$,C,calculus,hard,derivatives
+"A circle has radius 5. Its area is:",$10\pi$,$20\pi$,$25\pi$,$5\pi$,C,geometry,medium,circles
+Which number is prime?,21,33,37,39,37,arithmetic,easy,primes
+"If a triangle has angles $90°$ and $45°$, the third angle is:",$30°$,$45°$,$60°$,$90°$,B,geometry,easy,angles
+What is $\int 2x\,dx$?,$x^2 + C$,$2x^2 + C$,$x + C$,$2 + C$,A,calculus,hard,integrals
+"Evaluate: $$\sum_{k=1}^{4} k^2$$",25,30,36,20,B,algebra,medium,series

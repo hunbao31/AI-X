@@ -1,0 +1,301 @@
+// Shared API types — mirror the backend response shapes.
+
+export type Role = 'student' | 'teacher' | 'admin';
+export type Theme = 'light' | 'dark';
+export type ExerciseType = 'mcq' | 'text';
+export type Difficulty = 'easy' | 'medium' | 'hard';
+export type UnderstandingLevel = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export interface PublicUser {
+  id: string;
+  username: string;
+  email: string | null;
+  role: Role;
+  theme: Theme;
+  avatar: string;
+}
+
+export interface LoginResult {
+  token: string;
+  user: PublicUser;
+}
+
+export interface Exercise {
+  id: string;
+  question: string;
+  type: ExerciseType;
+  options: string[] | null;
+  answer: string;
+  difficulty: Difficulty;
+  topic: string;
+  topicId: string | null;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface ClassSummary {
+  id: string;
+  name: string;
+  code: string;
+  teacherId: string;
+  createdAt: string;
+  teacher: { id: string; username: string };
+  _count: { members: number; topics: number; sets: number };
+}
+
+export interface ClassMemberInfo {
+  id: string;
+  role: Role;
+  joinedAt: string;
+  user: { id: string; username: string; avatar: string };
+}
+
+export interface TopicInfo {
+  id: string;
+  name: string;
+  classId: string;
+  createdAt: string;
+  _count: { exercises: number };
+}
+
+export interface SetInClass {
+  id: string;
+  title: string;
+  description: string | null;
+  isPublic: boolean;
+  timeLimitPerQuestion: number | null;
+  createdAt: string;
+  _count: { items: number };
+}
+
+export interface ClassDetail {
+  id: string;
+  name: string;
+  code: string;
+  teacherId: string;
+  createdAt: string;
+  teacher: { id: string; username: string };
+  members: ClassMemberInfo[];
+  topics: TopicInfo[];
+  sets: SetInClass[];
+}
+
+export type QuizMode = 'practice' | 'exam';
+
+export interface SetSummary {
+  id: string;
+  title: string;
+  description: string | null;
+  classId: string | null;
+  isPublic: boolean;
+  isPublished: boolean;
+  mode: QuizMode;
+  timeLimitPerQuestion: number | null;
+  createdBy: string;
+  createdAt: string;
+  creator: { id: string; username: string };
+  class: { id: string; name: string } | null;
+  _count: { items: number; attempts: number };
+}
+
+export interface PlayableQuestion {
+  exerciseId: string;
+  order: number;
+  question: string;
+  type: ExerciseType;
+  options: string[] | null;
+  difficulty: Difficulty;
+  topic: string;
+}
+
+export interface SetItem {
+  id: string;
+  setId: string;
+  exerciseId: string;
+  order: number;
+  exercise: Exercise;
+}
+
+export interface SetDetail {
+  id: string;
+  title: string;
+  description: string | null;
+  classId: string | null;
+  class: { id: string; name: string } | null;
+  isPublic: boolean;
+  isPublished: boolean;
+  mode: QuizMode;
+  shuffleQuestions: boolean;
+  shuffleAnswers: boolean;
+  totalTimeLimit: number | null;
+  // Owner only; others see hasAccessCode.
+  accessCode?: string | null;
+  hasAccessCode: boolean;
+  timeLimitPerQuestion: number | null;
+  roomCode: string | null;
+  createdBy: string;
+  creator: { id: string; username: string };
+  createdAt: string;
+  questionCount: number;
+  questions: PlayableQuestion[];
+  // Present only when the requester owns the set.
+  items?: SetItem[];
+}
+
+export interface QuestionResult {
+  exerciseId: string;
+  correct: boolean;
+  yourAnswer: string;
+  // null in exam mode — the server never reveals the answer.
+  correctAnswer: string | null;
+  xpEarned: number;
+}
+
+export interface CheckResult {
+  correct: boolean;
+  correctAnswer: string;
+}
+
+export interface XpLeaderboardEntry {
+  rank: number;
+  userId: string;
+  username: string;
+  avatar: string;
+  xp: number;
+  level: number;
+  streak: number;
+}
+
+export interface GamificationSummary {
+  xp: number;
+  level: number;
+  streak: number;
+  // Present on GET /gamification (computed server-side).
+  badges?: Badge[];
+}
+
+export interface QuizResult {
+  attemptId: string | null;
+  score: number;
+  correctCount: number;
+  totalCount: number;
+  xpGained: number;
+  results: QuestionResult[];
+  gamification: GamificationSummary;
+}
+
+export interface StoredAnswer {
+  exerciseId: string;
+  answer: string;
+  timeMs?: number;
+}
+
+export interface StartAttemptResult {
+  attemptId: string;
+  lastQuestionIndex: number;
+  answers: StoredAnswer[];
+}
+
+export interface ContinueInfo {
+  attemptId: string;
+  setId: string;
+  title: string;
+  mode: QuizMode;
+  lastQuestionIndex: number;
+  totalCount: number;
+  startedAt: string;
+}
+
+export interface QuizHistoryEntry {
+  attemptId: string;
+  setId: string;
+  title: string;
+  mode: QuizMode;
+  score: number;
+  correctCount: number;
+  totalCount: number;
+  durationSeconds: number | null;
+  completedAt: string;
+}
+
+export interface RecentActivity {
+  lastQuiz: {
+    setId: string;
+    title: string;
+    correctCount: number;
+    totalCount: number;
+    score: number;
+    completedAt: string;
+  } | null;
+  lastTopic: { topic: string; at: string } | null;
+}
+
+export interface FavoriteEntry {
+  id: string;
+  createdAt: string;
+  exercise: Exercise;
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  earned: boolean;
+}
+
+export interface QuickQuiz {
+  topic: string;
+  questionCount: number;
+  questions: PlayableQuestion[];
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  userId: string;
+  username: string;
+  avatar: string;
+  score: number;
+  correctCount: number;
+  totalCount: number;
+  completedAt: string | null;
+}
+
+export interface AnalyticsSummary {
+  totalAttempts: number;
+  correct: number;
+  incorrect: number;
+  accuracy: number;
+  averageMastery: number;
+}
+
+export interface TopicAnalytics {
+  topic: string;
+  attempts: number;
+  correct: number;
+  correctRate: number;
+  masteryScore: number;
+}
+
+export interface TopicRecommendation {
+  topic: string;
+  masteryScore: number;
+  correctRate: number;
+  attempts: number;
+  action: 'repeat' | 'practice' | 'advance';
+  message: string;
+}
+
+export interface AttemptResult {
+  correct: boolean;
+  understandingLevel: UnderstandingLevel;
+  explanation: string;
+  suggestion: string;
+  mastery: { score: number; attempts: number };
+  recommendation: { message: string; nextAction: string };
+  gamification: GamificationSummary;
+}
+
+export interface UserProfile extends PublicUser {
+  createdAt: string;
+}

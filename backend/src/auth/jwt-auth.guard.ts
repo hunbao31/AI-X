@@ -6,14 +6,13 @@ import {
   Injectable,
 } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
+import { AuthenticatedUser } from './auth.types';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret-change-me';
 
-export interface AuthenticatedUser {
-  sub: string;
-  email: string;
-  role: 'student' | 'teacher';
-}
+// Re-exported so existing `import { AuthenticatedUser } from '../auth/jwt-auth.guard'`
+// call sites keep compiling; the canonical home is auth.types.ts.
+export type { AuthenticatedUser } from './auth.types';
 
 function unauthorized(message: string) {
   return new HttpException(
@@ -47,15 +46,20 @@ export class JwtAuthGuard implements CanActivate {
       throw unauthorized('Invalid or expired token.');
     }
 
-    // Tokens signed before the role system existed won't have `role` —
-    // reject them cleanly (forces a fresh login, which re-signs a token
-    // with the current shape) instead of letting RolesGuard silently
+    // Tokens signed before the username/role system existed won't carry these
+    // claims — reject them cleanly (forces a fresh login, which re-signs a
+    // token with the current shape) instead of letting downstream code
     // misbehave against `undefined`.
-    if (!decoded?.sub || !decoded?.role) {
+    if (!decoded?.sub || !decoded?.role || !decoded?.username) {
       throw unauthorized('Session is outdated — please log in again.');
     }
 
-    request.user = decoded as AuthenticatedUser;
+    request.user = {
+      sub: decoded.sub,
+      username: decoded.username,
+      email: decoded.email ?? null,
+      role: decoded.role,
+    } satisfies AuthenticatedUser;
     return true;
   }
 }

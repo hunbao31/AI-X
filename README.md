@@ -1,9 +1,99 @@
-# Math Learning Platform — MVP Scaffold
+# EduAI — AI Education Platform
 
-Two independent apps, no monorepo tooling yet (kept simple per Step 1):
+An AI-powered all-in-one learning platform combining classroom management
+(Google Classroom), quiz sets (Kahoot), mastery tracking (Khan Academy),
+gamification (Duolingo), and adaptive recommendations.
 
-- `frontend/` — Next.js 14 (App Router, TypeScript)
-- `backend/`  — NestJS 10 (TypeScript). Requires **Node.js 18+** (uses the global `fetch`/`AbortController`, no HTTP client library).
+Two independent apps, no monorepo tooling:
+
+- `frontend/` — Next.js 14 (App Router, TypeScript, Tailwind v4, Framer Motion)
+- `backend/`  — NestJS 10 + Prisma 5 + PostgreSQL. Requires **Node.js 18+**
+  (uses the global `fetch`/`AbortController`, no HTTP client library).
+
+## Domain model
+
+| Domain | Models | Notes |
+|---|---|---|
+| Users | `User` | Roles: `student` / `teacher` / `admin`. Login by **username or email** (email optional). Per-user `theme` (light/dark). |
+| Classroom | `Class`, `ClassMember` | Teacher creates a class → 6-char join code → students join. |
+| Topics | `Topic` | Teacher-defined, class-scoped. Exercises can link to one via `topicId`. |
+| Exercises | `Exercise` | MCQ or free text; editable (`PATCH`); optional class-topic link. |
+| Quiz sets | `ExerciseSet`, `ExerciseSetItem`, `QuizAttempt` | Kahoot-style ordered sets, per-question timer, server-side grading, leaderboard. `roomCode` field reserved for future realtime lobbies. |
+| Progression | `Mastery`, `Attempt` | Per-topic mastery 0–100, every answer recorded. |
+| Gamification | `Gamification` | XP (+10 correct / +3 incorrect), levels (100 XP each), daily streaks. |
+
+**Privacy**: quiz sets are `public`, class-only (visible to members), or
+private (creator only) — enforced server-side, and students never receive
+answer fields while playing.
+
+## API surface (all under `/api/v1`)
+
+```
+POST  /auth/register              {username, email?, password, role?}
+POST  /auth/login                 {identifier|username|email, password}
+GET   /users/me
+PATCH /users/me/settings          {theme: "light"|"dark"}
+
+POST  /classes                    (teacher) create, returns join code
+POST  /classes/join               {code}
+GET   /classes                    my classes
+GET   /classes/:id                detail (members, topics, sets) — members only
+
+POST  /topics                     (teacher) {name, classId}
+GET   /topics?classId=...         (members)
+
+POST  /exercises                  (teacher) supports topicId link + tags
+POST  /exercises/import           (teacher) bulk CSV {csv, topicId|topic, difficulty?}
+                                  → {created, failed, errors[]} (invalid rows skipped)
+GET   /exercises?topic=&topicId=&difficulty=&type=&tag=&search=
+GET   /exercises/:id
+PATCH /exercises/:id              (owner) edit any field
+DELETE /exercises/:id             (owner)
+GET   /exercises/stats            (teacher)
+
+POST  /sets                       (teacher) {title, description?, classId?, isPublic?,
+                                  mode? (practice|exam), timeLimitPerQuestion?}
+GET   /sets                       visible sets (mine + public + my classes; drafts owner-only)
+GET   /sets/:id                   playable detail (answers stripped for students)
+PATCH /sets/:id                   (owner) incl. mode switch
+POST  /sets/:id/add-exercise      (owner) {exerciseId}
+DELETE /sets/:id/exercises/:exerciseId
+POST  /sets/:id/check             {exerciseId, answer, code?} → instant feedback (practice only)
+POST  /sets/:id/start             {code?} → create/resume in-progress attempt (auto-save anchor)
+PATCH /sets/attempts/:id/progress {answers, lastQuestionIndex} auto-save
+POST  /sets/:id/submit            {answers:[{exerciseId, answer, timeMs?}], attemptId?,
+                                  durationSeconds?, code?} → graded + XP with speed/combo
+                                  bonuses (exam mode: correct answers withheld)
+POST  /sets/:id/duplicate         (owner) {title?, classId?} clone, optionally into a class
+GET   /sets/:id/export            (owner) CSV download, importer-compatible
+GET   /sets/by-code/:code         resolve a private access code → set id
+POST  /sets/quick-start           random topic + difficulty-scaled random questions
+POST  /sets/quick-start/submit    grade a quick quiz (stateless, XP still counts)
+GET   /sets/:id/leaderboard       best quiz score per user
+
+GET   /leaderboard/global         top students by XP
+GET   /leaderboard/class/:classId class members by XP (members only)
+
+GET   /favorites | /favorites/ids
+POST  /favorites/:exerciseId      save a question   DELETE → unsave
+GET   /users/me/continue          newest unfinished quiz (resume point)
+GET   /users/me/quiz-history      completed attempts
+GET   /users/me/recent-activity   last quiz + last topic
+GET   /gamification               xp/level/streak + computed badges
+GET   /analytics/questions        (teacher) most-missed questions
+GET   /analytics/sets             (teacher) avg score + avg time per set
+
+POST  /attempts                   single-exercise practice (AI-evaluated)
+GET   /mastery                    my per-topic mastery
+GET   /gamification               xp / level / streak
+GET   /analytics                  overall summary
+GET   /analytics/topics           per-topic correct rate + attempts
+GET   /recommendation             overall next step
+GET   /recommendation/topics      per-topic repeat / practice / advance
+```
+
+Every response uses the `{success, data, meta}` envelope; errors are
+`{success: false, error: {code, message}, meta}`.
 
 ## Setup
 
@@ -11,13 +101,9 @@ Two independent apps, no monorepo tooling yet (kept simple per Step 1):
 ```
 cd backend
 npm install                # also runs `prisma generate` via postinstall
-cp .env.example .env
-# set AI_API_KEY in .env to enable real evaluation — without it, /attempts
-# automatically falls back to the mock evaluator, no crash either way.
+cp .env.example .env       # set DATABASE_URL (+ JWT_SECRET, AI_API_KEY)
 
-# set DATABASE_URL in .env, then create tables:
-npx prisma migrate dev --name init
-
+npx prisma migrate deploy  # applies committed migrations
 npm run start:dev
 ```
 Runs at http://localhost:8080 — check http://localhost:8080/health
@@ -25,15 +111,27 @@ Runs at http://localhost:8080 — check http://localhost:8080/health
 **Database**: needs a running PostgreSQL instance reachable at `DATABASE_URL`.
 Easiest local option:
 ```
-docker run --name math-platform-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=math_platform -p 5432:5432 -d postgres:16
+docker run --name eduai-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=math_platform -p 5432:5432 -d postgres:16
 ```
-Or use a free [Supabase](https://supabase.com) / [Prisma Postgres](https://www.prisma.io/postgres) project and paste its connection string into `DATABASE_URL`.
+Or a free hosted PostgreSQL (Neon / Supabase / Prisma Postgres).
 
-This project pins Prisma to the 7.x line, which requires a driver adapter
-(`@prisma/adapter-pg`) and a `prisma.config.ts` file — noticeably different
-from older Prisma 5/6 tutorials. If `npx prisma migrate dev` errors out,
-check the exact installed version against
-https://www.prisma.io/docs/orm/overview/databases/postgresql.
+### Migration notes
+
+Migrations live in `backend/prisma/migrations` and are ordered:
+
+1. `..._init` — original schema (User, Exercise, Attempt, Mastery, Gamification).
+2. `..._platform_upgrade` — classes/topics/sets + user upgrade. Hand-written
+   and **data-safe on existing databases**: it adds `User.username` as
+   nullable, backfills it from `email`, then locks it down as `NOT NULL
+   UNIQUE`, and makes `email` optional. Nothing is dropped.
+
+- Fresh or existing DB: `npx prisma migrate deploy` (non-interactive, applies
+  what's pending — this is also what CI/production should run).
+- Local development with a shadow DB: `npx prisma migrate dev` also works.
+- Pre-upgrade accounts keep working: their username is their email address,
+  so they log in exactly as before (and can also keep using the email field).
+- Old JWTs (without a `username` claim) are rejected with
+  `Session is outdated — please log in again.` — users just log in once more.
 
 ### Frontend
 ```
@@ -44,11 +142,41 @@ npm run dev
 ```
 Runs at http://localhost:3000
 
+## Frontend pages
+
+```
+/login, /register            username (+ optional email) auth
+/dashboard                   student home: progress, join class by code,
+                             Class → Topic → Quiz picker (nothing auto-starts)
+/practice[?topic=...]        topic practice with explicit Start gate
+/quizzes                     visible quiz sets
+/quiz/[id]                   quiz player: intro → timed questions → results
+                             + review + leaderboard
+/settings                    theme toggle (dark/light) + account info
+
+/teacher/dashboard           stats + quick links
+/teacher/classes[/id]        create class, join code, members, topics
+/teacher/create              create exercise (optional class-topic link)
+/teacher/manage              list / edit / delete exercises
+/teacher/exercises/[id]/edit edit form (PATCH)
+/teacher/sets[/id]           create sets, add/remove questions, visibility,
+                             timer, leaderboard
+/teacher/settings            same settings panel
+```
+
+Theming: dark is the default; light mode is applied via an `html.light`
+class (per-account preference, synced through `PATCH /users/me/settings`).
+
+Math: questions/options/explanations render LaTeX via **KaTeX** — `$...$`
+inline, `$$...$$` block (`components/ui/MathText.tsx`). Content is stored as
+raw LaTeX strings; invalid LaTeX falls back to plain text. CSV import passes
+LaTeX through verbatim — see [`sample-questions.csv`](./sample-questions.csv).
+
 ## Status
 
-Step 12: production-ready for deployment — see [`DEPLOYMENT.md`](./DEPLOYMENT.md)
-for the full Vercel (frontend) / Railway (backend) / Supabase (database)
-runbook and required environment variables. `User`, `Attempt`, `Mastery`,
-and `Gamification` persist in PostgreSQL via Prisma (Step 11). Curriculum
-content is still an in-memory array. No indexing or caching optimization
-yet.
+Production-ready MVP — see [`DEPLOYMENT.md`](./DEPLOYMENT.md) for the
+Vercel (frontend) / Railway (backend) / managed-PostgreSQL runbook and
+required environment variables. Realtime quiz rooms (`roomCode`,
+leaderboard, timer fields) are modeled but the socket layer is not built
+yet. The legacy `/curriculum` + `/exercise` demo pages remain for
+backward compatibility.

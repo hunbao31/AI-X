@@ -18,5 +18,6 @@ import { GamificationModule } from '../gamification/gamification.module';
   ],
   controllers: [ExercisesController, AttemptsController],
   providers: [ExercisesService],
+  exports: [ExercisesService],
 })
 export class ExercisesModule {}

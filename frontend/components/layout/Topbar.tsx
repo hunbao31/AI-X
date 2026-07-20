@@ -3,25 +3,19 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge } from '../ui/Badge';
-
-interface StoredUser {
-  id: string;
-  email: string;
-  role: 'student' | 'teacher';
-}
+import { getStoredUser, clearSession } from '@/lib/session';
+import type { PublicUser } from '@/lib/types';
 
 export function Topbar() {
   const router = useRouter();
-  const [user, setUser] = useState<StoredUser | null>(null);
+  const [user, setUser] = useState<PublicUser | null>(null);
 
   useEffect(() => {
-    const raw = localStorage.getItem('user');
-    if (raw) setUser(JSON.parse(raw));
+    setUser(getStoredUser());
   }, []);
 
   function handleLogout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    clearSession();
     router.push('/login');
   }
 
@@ -30,7 +24,7 @@ export function Topbar() {
       <div />
       <div className="flex items-center gap-4">
         {user && <Badge tone="indigo">{user.role}</Badge>}
-        <span className="text-sm text-slate-300">{user?.email ?? '…'}</span>
+        <span className="text-sm text-slate-300">{user?.username ?? '…'}</span>
         <button
           onClick={handleLogout}
           className="rounded-xl px-3 py-1.5 text-sm font-medium text-slate-300 transition-all duration-200 hover:scale-105 hover:bg-white/10 hover:text-white"

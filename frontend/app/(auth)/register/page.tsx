@@ -5,17 +5,16 @@ import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import type { Role } from '@/lib/types';
 
-type Role = 'student' | 'teacher';
-
-const inputClass =
-  'w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 transition-colors focus:border-indigo-400/60 focus:outline-none focus:ring-2 focus:ring-indigo-400/30';
+type SignupRole = Extract<Role, 'student' | 'teacher'>;
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<Role>('student');
+  const [role, setRole] = useState<SignupRole>('student');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +24,12 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await apiPost('/api/v1/auth/register', { email, password, role });
+      await apiPost('/api/v1/auth/register', {
+        username,
+        email: email.trim() === '' ? null : email.trim(),
+        password,
+        role,
+      });
       router.push('/login');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed.');
@@ -39,37 +43,67 @@ export default function RegisterPage() {
       <h1 className="mb-6 text-2xl font-bold text-white">Create your account</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-300">
-            Email
+          <label
+            htmlFor="username"
+            className="mb-1.5 block text-sm font-medium text-slate-300"
+          >
+            Username
+          </label>
+          <input
+            id="username"
+            type="text"
+            autoComplete="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            minLength={3}
+            maxLength={32}
+            pattern="[a-zA-Z0-9._-]+"
+            title="Letters, digits, dots, underscores, and hyphens only"
+            className="input-base"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="email"
+            className="mb-1.5 block text-sm font-medium text-slate-300"
+          >
+            Email <span className="text-slate-500">(optional)</span>
           </label>
           <input
             id="email"
             type="email"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
-            className={inputClass}
+            className="input-base"
           />
         </div>
         <div>
-          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-300">
+          <label
+            htmlFor="password"
+            className="mb-1.5 block text-sm font-medium text-slate-300"
+          >
             Password
           </label>
           <input
             id="password"
             type="password"
+            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className={inputClass}
+            className="input-base"
           />
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-300">I am a…</label>
+          <label className="mb-1.5 block text-sm font-medium text-slate-300">
+            I am a…
+          </label>
           <div className="grid grid-cols-2 gap-3">
-            {(['student', 'teacher'] as Role[]).map((r) => (
+            {(['student', 'teacher'] as SignupRole[]).map((r) => (
               <button
                 key={r}
                 type="button"

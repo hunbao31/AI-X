@@ -1,55 +1,34 @@
 'use client';
 
-import { useEffect, useMemo, useState, FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, FormEvent, Suspense } from 'react';
 import { motion } from 'framer-motion';
+import { useSearchParams } from 'next/navigation';
 import { apiGet, apiPost } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { DifficultyBadge } from '@/components/exercise/DifficultyBadge';
 import { McqOptions } from '@/components/exercise/McqOptions';
 import { FeedbackCard } from '@/components/exercise/FeedbackCard';
-import { useClickSound } from '@/lib/useClickSound';
+import { MathText } from '@/components/ui/MathText';
+import { useMascot } from '@/components/mascot/MascotProvider';
+import { useSounds } from '@/lib/sounds';
+import type { Exercise, AttemptResult } from '@/lib/types';
 
-interface Exercise {
-  id: string;
-  question: string;
-  type: 'mcq' | 'text';
-  options: string[] | null;
-  answer: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  topic: string;
-}
+function PracticePageInner() {
+  const { playClick, playCorrect, playWrong } = useSounds();
+  const mascot = useMascot();
+  // Consecutive correct answers in this practice session.
+  const streakRef = useRef(0);
+  const searchParams = useSearchParams();
+  // A ?topic= link (from the dashboard picker) preselects the topic, but the
+  // student still has to press Start — questions never auto-show.
+  const topicFromUrl = searchParams.get('topic');
 
-interface AttemptResult {
-  correct: boolean;
-  understandingLevel: 'LOW' | 'MEDIUM' | 'HIGH';
-  explanation: string;
-  suggestion: string;
-  mastery: { score: number; attempts: number };
-  recommendation: { message: string; nextAction: string };
-  gamification: { xp: number; level: number; streak: number };
-}
-
-// Required verbatim on this page — do not edit, translate, or remove.
-function StudentPageQuote() {
-  return (
-    <p className="animate-fade-in bg-gradient-to-r from-indigo-300 via-fuchsia-300 to-amber-200 bg-clip-text text-center font-serif italic leading-snug text-transparent drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]">
-      &ldquo;The smallest difference between people is intelligence. The biggest
-      difference is perseverance.&rdquo;
-    </p>
-  );
-}
-
-export default function PracticePage() {
-  const playClick = useClickSound();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
-  // Gates the whole practice flow: topics are known as soon as the list
-  // loads, but nothing exercise-related renders until the student picks a
-  // topic AND presses Start.
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(topicFromUrl);
   const [started, setStarted] = useState(false);
 
   const [index, setIndex] = useState(0);
@@ -74,6 +53,12 @@ export default function PracticePage() {
     [exercises, selectedTopic],
   );
   const current = topicExercises[index] ?? null;
+
+  // Koaly ponders along while a practice run is active.
+  useEffect(() => {
+    mascot.setMood(started ? 'thinking' : 'idle');
+    return () => mascot.setMood('idle');
+  }, [started, mascot]);
 
   function handleStart() {
     if (!selectedTopic) return;
@@ -114,6 +99,19 @@ export default function PracticePage() {
         answer,
       });
       setResult(attemptResult);
+      if (attemptResult.correct) {
+        playCorrect();
+        streakRef.current += 1;
+        if (streakRef.current >= 3) {
+          mascot.react('streak', `${streakRef.current} in a row! 🔥`);
+        } else {
+          mascot.react('correct');
+        }
+      } else {
+        playWrong();
+        streakRef.current = 0;
+        mascot.react('wrong');
+      }
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Failed to submit answer.');
     } finally {
@@ -123,8 +121,6 @@ export default function PracticePage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <StudentPageQuote />
-
       {loading ? (
         <p className="text-center text-slate-400">Loading topics…</p>
       ) : loadError ? (
@@ -134,7 +130,7 @@ export default function PracticePage() {
       ) : exercises.length === 0 ? (
         <Card>
           <p className="text-slate-300">
-            No exercises yet — create one from the Teacher dashboard first.
+            No exercises yet — your teacher has not created any content.
           </p>
         </Card>
       ) : !started ? (
@@ -196,7 +192,9 @@ export default function PracticePage() {
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className="space-y-4"
           >
-            <h2 className="text-xl font-semibold text-white">{current.question}</h2>
+            <h2 className="text-xl font-semibold text-white">
+              <MathText text={current.question} />
+            </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {current.type === 'mcq' ? (
@@ -213,7 +211,7 @@ export default function PracticePage() {
                   onChange={(e) => setTextAnswer(e.target.value)}
                   disabled={!!result || submitting}
                   placeholder="Type your answer…"
-                  className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-500 transition-colors focus:border-indigo-400/60 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 disabled:opacity-60"
+                  className="input-base px-4 py-3"
                 />
               )}
 
@@ -252,5 +250,13 @@ export default function PracticePage() {
         </Card>
       )}
     </div>
+  );
+}
+
+export default function PracticePage() {
+  return (
+    <Suspense fallback={<p className="text-center text-slate-400">Loading…</p>}>
+      <PracticePageInner />
+    </Suspense>
   );
 }

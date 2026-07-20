@@ -10,20 +10,84 @@ datasource db {
 enum Role {
   student
   teacher
+  admin
+}
+
+enum Theme {
+  light
+  dark
 }
 
 model User {
   id           String   @id @default(uuid())
-  email        String   @unique
+  username     String   @unique
+  email        String?  @unique
   passwordHash String
   role         Role     @default(student)
-  createdAt    DateTime @default(now())
+  theme        Theme    @default(dark)
+  // Preset avatar id (see backend/src/users/avatars.ts) — not an upload.
+  avatar    String   @default("koaly_default")
+  createdAt DateTime @default(now())
 
-  attempts         Attempt[]
-  masteries        Mastery[]
-  gamification     Gamification?
-  createdExercises Exercise[]
+  attempts          Attempt[]
+  masteries         Mastery[]
+  gamification      Gamification?
+  createdExercises  Exercise[]
+  taughtClasses     Class[]            @relation("ClassTeacher")
+  classMemberships  ClassMember[]
+  createdSets       ExerciseSet[]
+  quizAttempts      QuizAttempt[]
+  favoriteQuestions FavoriteQuestion[]
+  notifications     Notification[]
 }
+
+// ---------------------------------------------------------------------------
+// Classroom domain (Google Classroom style)
+// ---------------------------------------------------------------------------
+
+model Class {
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  teacherId String
+  createdAt DateTime @default(now())
+
+  teacher User          @relation("ClassTeacher", fields: [teacherId], references: [id])
+  members ClassMember[]
+  topics  Topic[]
+  sets    ExerciseSet[]
+}
+
+model ClassMember {
+  id       String   @id @default(uuid())
+  userId   String
+  classId  String
+  role     Role     @default(student)
+  joinedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, classId])
+  @@index([classId])
+}
+
+// Teacher-defined, class-scoped grouping for exercises.
+model Topic {
+  id        String   @id @default(uuid())
+  name      String
+  classId   String
+  createdAt DateTime @default(now())
+
+  class     Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
+  exercises Exercise[]
+
+  @@unique([classId, name])
+}
+
+// ---------------------------------------------------------------------------
+// Exercises
+// ---------------------------------------------------------------------------
 
 enum ExerciseType {
   mcq
@@ -43,12 +107,131 @@ model Exercise {
   options    Json?
   answer     String
   difficulty Difficulty
+  // Free-form labels for question-bank filtering ("fractions", "exam-prep").
+  tags       String[]     @default([])
+  // Free-text label used by the practice/mastery flow. When the exercise is
+  // linked to a class Topic (topicId), this mirrors Topic.name.
   topic      String
+  topicId    String?
   createdBy  String
   createdAt  DateTime     @default(now())
 
-  creator User @relation(fields: [createdBy], references: [id])
+  creator     User               @relation(fields: [createdBy], references: [id])
+  topicRef    Topic?             @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  setItems    ExerciseSetItem[]
+  favoritedBy FavoriteQuestion[]
 }
+
+// ---------------------------------------------------------------------------
+// Quiz sets (Kahoot style)
+// ---------------------------------------------------------------------------
+
+// How a set behaves while playing: practice gives instant per-question
+// feedback and full corrections; exam collects silently and never reveals
+// the correct answers.
+enum QuizMode {
+  practice
+  exam
+}
+
+model ExerciseSet {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+  // Visibility: isPublic → everyone; classId → class members; accessCode →
+  // anyone holding the code; otherwise creator only.
+  classId    String?
+  isPublic   Boolean @default(false)
+  accessCode String?
+  // Draft sets (isPublished=false) are visible to the owner only.
+  isPublished Boolean  @default(true)
+  mode        QuizMode @default(practice)
+  // Kahoot-style randomization, applied per attempt (seeded, stable on resume).
+  shuffleQuestions Boolean @default(false)
+  shuffleAnswers   Boolean @default(false)
+  // Seconds per question / for the whole quiz; null = untimed.
+  timeLimitPerQuestion Int?
+  totalTimeLimit       Int?
+  // Reserved for the future realtime mode: a live lobby claims a room code.
+  roomCode  String?  @unique
+  createdBy String
+  createdAt DateTime @default(now())
+
+  creator  User              @relation(fields: [createdBy], references: [id])
+  class    Class?            @relation(fields: [classId], references: [id], onDelete: SetNull)
+  items    ExerciseSetItem[]
+  attempts QuizAttempt[]
+}
+
+model ExerciseSetItem {
+  id         String @id @default(uuid())
+  setId      String
+  exerciseId String
+  order      Int
+
+  set      ExerciseSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  exercise Exercise    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([setId, exerciseId])
+  @@index([setId, order])
+}
+
+// One row per run of a set. In-progress rows (completedAt = null) carry the
+// auto-saved answers + position so a student can resume where they left off;
+// completed rows double as the leaderboard source (order by score desc).
+model QuizAttempt {
+  id           String    @id @default(uuid())
+  setId        String
+  userId       String
+  score        Int       @default(0)
+  correctCount Int       @default(0)
+  totalCount   Int       @default(0)
+  // Auto-save state: [{exerciseId, answer}] + last visited question index.
+  answers           Json @default("[]")
+  lastQuestionIndex Int  @default(0)
+  // Wall-clock seconds from start to submit (reported by the client).
+  durationSeconds Int?
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+
+  set  ExerciseSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  user User        @relation(fields: [userId], references: [id])
+
+  @@index([setId, score])
+  @@index([userId, completedAt])
+}
+
+// A student's saved/bookmarked questions.
+model FavoriteQuestion {
+  id         String   @id @default(uuid())
+  userId     String
+  exerciseId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, exerciseId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Learning progression + analytics
+// ---------------------------------------------------------------------------
 
 enum UnderstandingLevel {
   LOW
@@ -56,9 +239,8 @@ enum UnderstandingLevel {
   HIGH
 }
 
-// One row per submitted answer. Didn't exist before Step 11 — the
-// AnalyticsStore counters from Step 8 are replaced by querying this table
-// directly, rather than keeping a second, easily-divergent source of truth.
+// One row per submitted answer. exerciseId is matched by value, not by FK —
+// attempts survive exercise deletion for analytics purposes.
 model Attempt {
   id                 String             @id @default(uuid())
   userId             String
@@ -72,20 +254,24 @@ model Attempt {
   user User @relation(fields: [userId], references: [id])
 }
 
-// One row per user+topic, same shape MasteryStore used to hold in memory.
+// One row per user+topic. Keyed by the free-text topic label (the practice
+// flow's identifier); topicId is informational, set when the source exercise
+// is linked to a class Topic.
 model Mastery {
-  id       String @id @default(uuid())
-  userId   String
-  topic    String
-  score    Int
-  attempts Int
+  id        String   @id @default(uuid())
+  userId    String
+  topic     String
+  topicId   String?
+  score     Int
+  attempts  Int
+  updatedAt DateTime @default(now()) @updatedAt
 
   user User @relation(fields: [userId], references: [id])
 
   @@unique([userId, topic])
 }
 
-// One row per user — mirrors GamificationStore's in-memory record.
+// One row per user.
 model Gamification {
   id             String  @id @default(uuid())
   userId         String  @unique

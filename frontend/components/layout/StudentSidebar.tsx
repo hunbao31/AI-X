@@ -2,25 +2,21 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
-const NAV_ITEMS = [
-  { href: '/practice', label: 'Practice', icon: '✏️' },
-  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-];
+import { STUDENT_NAV } from './nav-items';
 
 export function StudentSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+    <aside className="hidden h-screen w-64 flex-col border-r border-white/10 bg-white/5 p-6 backdrop-blur-xl md:flex">
       <div className="mb-8 bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
-        MathAI
+        EduAI
       </div>
       <span className="mb-4 px-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
         Student
       </span>
       <nav className="flex flex-col gap-1">
-        {NAV_ITEMS.map((item) => {
+        {STUDENT_NAV.map((item) => {
           const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
           return (
             <Link

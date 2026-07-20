@@ -37,12 +37,15 @@ export class GamificationStore {
     );
   }
 
-  recordAttempt(userId: string, correct: boolean) {
+  // xpOverride lets the quiz pipeline award boosted XP (speed/combo bonuses)
+  // while the plain practice flow keeps the flat +10/+3.
+  recordAttempt(userId: string, correct: boolean, xpOverride?: number) {
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.gamification.findUnique({ where: { userId } });
       const today = todayKey();
 
-      const xp = (existing?.xp ?? 0) + (correct ? XP_CORRECT : XP_INCORRECT);
+      const gained = xpOverride ?? (correct ? XP_CORRECT : XP_INCORRECT);
+      const xp = (existing?.xp ?? 0) + gained;
       const level = Math.floor(xp / 100);
 
       let streak: number;

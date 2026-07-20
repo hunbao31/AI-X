@@ -5,18 +5,12 @@ import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-
-interface LoginResult {
-  token: string;
-  user: { id: string; email: string; role: 'student' | 'teacher' };
-}
-
-const inputClass =
-  'w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 transition-colors focus:border-indigo-400/60 focus:outline-none focus:ring-2 focus:ring-indigo-400/30';
+import { storeSession } from '@/lib/session';
+import type { LoginResult } from '@/lib/types';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,13 +22,14 @@ export default function LoginPage() {
 
     try {
       const result = await apiPost<LoginResult>('/api/v1/auth/login', {
-        email,
+        identifier,
         password,
       });
 
-      localStorage.setItem('token', result.token);
-      localStorage.setItem('user', JSON.stringify(result.user));
-      router.push(result.user.role === 'teacher' ? '/teacher/dashboard' : '/practice');
+      storeSession(result.token, result.user);
+      router.push(
+        result.user.role === 'student' ? '/dashboard' : '/teacher/dashboard',
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed.');
     } finally {
@@ -47,34 +42,42 @@ export default function LoginPage() {
       <h1 className="mb-6 text-2xl font-bold text-white">Welcome back</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-300">
-            Email
+          <label
+            htmlFor="identifier"
+            className="mb-1.5 block text-sm font-medium text-slate-300"
+          >
+            Username or email
           </label>
           <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            id="identifier"
+            type="text"
+            autoComplete="username"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
             required
-            className={inputClass}
+            className="input-base"
           />
         </div>
         <div>
-          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-300">
+          <label
+            htmlFor="password"
+            className="mb-1.5 block text-sm font-medium text-slate-300"
+          >
             Password
           </label>
           <input
             id="password"
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className={inputClass}
+            className="input-base"
           />
         </div>
         {error && <p className="text-sm text-red-400">{error}</p>}
         <Button type="submit" disabled={loading} className="w-full">
-          {loading ? 'Logging in…' : 'Login'}
+          {loading ? 'Logging in…' : 'Log in'}
         </Button>
       </form>
       <p className="mt-6 text-center text-sm text-slate-400">

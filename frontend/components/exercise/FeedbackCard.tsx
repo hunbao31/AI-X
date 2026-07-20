@@ -1,5 +1,6 @@
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
+import { MathText } from '../ui/MathText';
 
 interface FeedbackCardProps {
   correct: boolean;
@@ -42,12 +43,16 @@ export function FeedbackCard({
       {!correct && (
         <p className="text-sm text-slate-300">
           Correct answer:{' '}
-          <span className="font-semibold text-white">{correctAnswer}</span>
+          <MathText text={correctAnswer} className="font-semibold text-white" />
         </p>
       )}
 
-      <p className="text-sm text-slate-200">{explanation}</p>
-      <p className="text-sm italic text-slate-400">Suggestion: {suggestion}</p>
+      <p className="text-sm text-slate-200">
+        <MathText text={explanation} />
+      </p>
+      <p className="text-sm italic text-slate-400">
+        Suggestion: <MathText text={suggestion} />
+      </p>
 
       <div className="grid grid-cols-1 gap-3 border-t border-white/10 pt-4 sm:grid-cols-3">
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">

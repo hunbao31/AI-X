@@ -61,6 +61,11 @@ git push -u origin main
    AI_API_KEY=<your Anthropic API key>
    FRONTEND_URL=<your Vercel URL, added after step 3>
    ```
+   `FRONTEND_URL` accepts a comma-separated list and `*` wildcards, so one
+   backend can serve production plus Vercel preview deployments:
+   ```
+   FRONTEND_URL=https://your-app.vercel.app,https://*.vercel.app
+   ```
    Leave `PORT` unset — Railway injects it automatically, and `main.ts`
    already reads `process.env.PORT`.
 5. Deploy, then note the public URL Railway assigns
@@ -92,13 +97,17 @@ command `npm start`, same environment variables.)*
 
 Against the deployed Vercel URL:
 
-1. `/register` — create an account.
-2. `/login` — log in, confirm you land on `/curriculum`.
-3. Pick a grade → topic → answer an exercise on `/exercise`.
-4. Confirm the AI evaluation response renders (correct/incorrect,
-   understanding level, explanation, suggestion) — this also confirms
-   `AI_API_KEY` is working end-to-end in production, not just locally.
-5. Check `/dashboard` shows the attempt in the stats and mastery bar.
+1. `/register` — create a **teacher** account (username; email optional).
+2. Log in → `/teacher/classes` → create a class, note the join code.
+3. Add a topic to the class, create an exercise linked to it, then build a
+   quiz set on `/teacher/sets` and add the exercise.
+4. `/register` a **student** account, join the class with the code on
+   `/dashboard`, open the quiz, and complete it — confirm the score,
+   XP/streak, and leaderboard render.
+5. Answer the same exercise on `/practice` and confirm the AI evaluation
+   response renders (correct/incorrect, understanding level, explanation)
+   — this also confirms `AI_API_KEY` works end-to-end in production.
+6. Toggle light mode on `/settings` and reload — the choice must persist.
 
 If step 3/4 fails with a CORS error in the browser console, double-check
 `FRONTEND_URL` on Railway matches the Vercel URL **exactly** (including

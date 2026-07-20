@@ -15,6 +15,243 @@
   animation: fadeIn 0.4s ease-out;
 }
 
+/* ---------------------------------------------------------------------------
+ * Theme system
+ *
+ * The app was originally styled dark-only with raw Tailwind utilities
+ * (text-white, bg-white/10, ...). Rather than rewrite every component, the
+ * light theme overrides those exact utilities under `html.light`. These rules
+ * are unlayered, so they win over Tailwind's layered utilities; dark mode is
+ * the untouched default.
+ * ------------------------------------------------------------------------- */
+
+:root {
+  --app-bg-from: #020617; /* slate-950 */
+  --app-bg-via: #1e1b4b; /* indigo-950 */
+  --app-bg-to: #0f172a; /* slate-900 */
+}
+
+html.light {
+  --app-bg-from: #eef2ff; /* indigo-50 */
+  --app-bg-via: #f8fafc; /* slate-50 */
+  --app-bg-to: #e0e7ff; /* indigo-100 */
+}
+
+/* Page background shared by every app layout. */
+.app-shell {
+  background-image: linear-gradient(
+    to bottom right,
+    var(--app-bg-from),
+    var(--app-bg-via),
+    var(--app-bg-to)
+  );
+}
+
+/* Standard form control for new pages (legacy pages keep their inline
+ * utility strings — the overrides below theme those too). */
+.input-base {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  color: #ffffff;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.input-base::placeholder {
+  color: #64748b;
+}
+.input-base:focus {
+  outline: none;
+  border-color: rgba(129, 140, 248, 0.6);
+  box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.3);
+}
+.input-base:disabled {
+  opacity: 0.6;
+}
+select.input-base option {
+  background: #0f172a;
+  color: #ffffff;
+}
+html.light .input-base {
+  border-color: rgba(15, 23, 42, 0.15);
+  background: rgba(255, 255, 255, 0.85);
+  color: #0f172a;
+}
+html.light .input-base::placeholder {
+  color: #94a3b8;
+}
+html.light select.input-base option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+/* Light-theme remaps of the dark-coded utilities used across the app. */
+html.light .text-white {
+  color: #0f172a;
+}
+html.light .text-slate-200 {
+  color: #1e293b;
+}
+html.light .text-slate-300 {
+  color: #334155;
+}
+html.light .text-slate-400 {
+  color: #475569;
+}
+html.light .text-slate-500 {
+  color: #64748b;
+}
+html.light .placeholder\:text-slate-500::placeholder {
+  color: #94a3b8;
+}
+html.light .hover\:text-white:hover {
+  color: #0f172a;
+}
+html.light .hover\:text-slate-200:hover {
+  color: #1e293b;
+}
+html.light .bg-white\/5 {
+  background-color: rgba(15, 23, 42, 0.04);
+}
+html.light .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.7);
+}
+html.light .hover\:bg-white\/10:hover {
+  background-color: rgba(15, 23, 42, 0.07);
+}
+html.light .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.08);
+}
+html.light .border-white\/15 {
+  border-color: rgba(15, 23, 42, 0.12);
+}
+html.light .border-white\/20 {
+  border-color: rgba(15, 23, 42, 0.15);
+}
+html.light .bg-slate-950\/60 {
+  background-color: rgba(255, 255, 255, 0.75);
+}
+html.light .text-indigo-100 {
+  color: #3730a3;
+}
+html.light .text-indigo-200 {
+  color: #4338ca;
+}
+html.light .text-indigo-300 {
+  color: #4f46e5;
+}
+html.light .hover\:text-indigo-200:hover {
+  color: #4338ca;
+}
+html.light .text-green-300 {
+  color: #15803d;
+}
+html.light .text-red-300 {
+  color: #b91c1c;
+}
+html.light .text-red-400 {
+  color: #dc2626;
+}
+html.light .text-yellow-300 {
+  color: #a16207;
+}
+html.light .text-amber-200 {
+  color: #b45309;
+}
+
+/* Gradient *text* accents readable on a light background. */
+html.light .from-indigo-300 {
+  --tw-gradient-from: #4f46e5;
+}
+html.light .to-purple-300 {
+  --tw-gradient-to: #9333ea;
+}
+html.light .from-indigo-400 {
+  --tw-gradient-from: #4f46e5;
+}
+html.light .to-purple-400 {
+  --tw-gradient-to: #9333ea;
+}
+html.light .from-amber-300 {
+  --tw-gradient-from: #d97706;
+}
+html.light .to-orange-400 {
+  --tw-gradient-to: #ea580c;
+}
+
+/* ---------------------------------------------------------------------------
+ * Game-feel helpers: leaderboard podium glow + reward text glow.
+ * CSS keyframes (not JS) so the infinite pulse costs nothing on the main
+ * thread.
+ * ------------------------------------------------------------------------- */
+
+@keyframes podiumPulse {
+  from {
+    box-shadow: 0 0 10px 0 var(--podium-glow);
+  }
+  to {
+    box-shadow: 0 0 24px 5px var(--podium-glow);
+  }
+}
+
+.podium-1 {
+  --podium-glow: rgba(251, 191, 36, 0.45); /* gold */
+  border-color: rgba(251, 191, 36, 0.65) !important;
+  animation: podiumPulse 1.6s ease-in-out infinite alternate;
+}
+.podium-2 {
+  --podium-glow: rgba(203, 213, 225, 0.4); /* silver */
+  border-color: rgba(203, 213, 225, 0.6) !important;
+  animation: podiumPulse 1.9s ease-in-out infinite alternate;
+}
+.podium-3 {
+  --podium-glow: rgba(217, 119, 6, 0.4); /* bronze */
+  border-color: rgba(217, 119, 6, 0.55) !important;
+  animation: podiumPulse 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes mascotGlow {
+  from {
+    box-shadow: 0 0 14px 2px rgba(251, 191, 36, 0.35);
+  }
+  to {
+    box-shadow: 0 0 30px 8px rgba(251, 191, 36, 0.6);
+  }
+}
+
+.mascot-glow {
+  animation: mascotGlow 0.9s ease-in-out infinite alternate;
+}
+
+.xp-glow {
+  text-shadow:
+    0 0 18px rgba(251, 191, 36, 0.55),
+    0 0 40px rgba(249, 115, 22, 0.3);
+}
+
+.levelup-glow {
+  text-shadow:
+    0 0 24px rgba(129, 140, 248, 0.8),
+    0 0 60px rgba(168, 85, 247, 0.5);
+}
+
+/* Graph-paper grid in the backdrop flips to dark lines on light theme. */
+.backdrop-grid {
+  background-image:
+    linear-gradient(to right, #ffffff 1px, transparent 1px),
+    linear-gradient(to bottom, #ffffff 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+html.light .backdrop-grid {
+  background-image:
+    linear-gradient(to right, #0f172a 1px, transparent 1px),
+    linear-gradient(to bottom, #0f172a 1px, transparent 1px);
+}
+
 * {
   box-sizing: border-box;
 }

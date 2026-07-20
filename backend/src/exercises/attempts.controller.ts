@@ -83,6 +83,7 @@ export class AttemptsController {
       req.user.sub,
       body.topic,
       evaluation.understandingLevel,
+      exercise.topicId,
     );
 
     const recommendation = this.recommendationService.getRecommendation(

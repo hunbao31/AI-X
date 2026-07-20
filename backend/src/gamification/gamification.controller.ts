@@ -7,9 +7,10 @@ import { GamificationService } from './gamification.service';
 export class GamificationController {
   constructor(private readonly gamificationService: GamificationService) {}
 
+  // Includes computed badges alongside xp/level/streak.
   @Get()
   async getGamification(@Req() req: { user: AuthenticatedUser }) {
-    const summary = await this.gamificationService.getSummary(req.user.sub);
+    const summary = await this.gamificationService.getFullSummary(req.user.sub);
 
     return {
       success: true,

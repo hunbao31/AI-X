@@ -2,10 +2,46 @@ export type ExerciseType = 'mcq' | 'text';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export class CreateExerciseDto {
-  question: string;
-  type: ExerciseType;
+  question!: string;
+  type!: ExerciseType;
   options?: string[] | null;
-  answer: string;
-  difficulty: Difficulty;
-  topic: string;
+  answer!: string;
+  difficulty!: Difficulty;
+  tags?: string[];
+  // Free-text label. Optional when topicId is given (derived from the Topic).
+  topic?: string;
+  // Optional link to a class Topic; when set, `topic` mirrors Topic.name.
+  topicId?: string | null;
+}
+
+// PATCH payload — every field optional; merged over the existing row and
+// re-validated as a whole.
+export class UpdateExerciseDto {
+  question?: string;
+  type?: ExerciseType;
+  options?: string[] | null;
+  answer?: string;
+  difficulty?: Difficulty;
+  tags?: string[];
+  topic?: string;
+  topicId?: string | null;
+}
+
+export class ImportExercisesDto {
+  // Raw CSV text (the frontend reads the uploaded file client-side).
+  csv!: string;
+  // Where the imported questions land: a class Topic link or a free label.
+  topicId?: string | null;
+  topic?: string;
+  // Default difficulty for rows that omit the optional column.
+  difficulty?: Difficulty;
+}
+
+export interface ExerciseFilters {
+  topic?: string;
+  topicId?: string;
+  difficulty?: string;
+  type?: string;
+  tag?: string;
+  search?: string;
 }

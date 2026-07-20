@@ -19,7 +19,7 @@ export default function HomePage() {
   }, [router]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900">
+    <main className="app-shell flex min-h-screen items-center justify-center">
       <p className="text-slate-400">Loading…</p>
     </main>
   );

@@ -27,6 +27,8 @@ export class MasteryStore {
     userId: string,
     topic: string,
     understandingLevel: UnderstandingLevel,
+    // Informational link to a class Topic, when the source exercise has one.
+    topicId?: string | null,
   ) {
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.mastery.findUnique({
@@ -41,8 +43,8 @@ export class MasteryStore {
 
       return tx.mastery.upsert({
         where: { userId_topic: { userId, topic } },
-        create: { userId, topic, score, attempts },
-        update: { score, attempts },
+        create: { userId, topic, topicId: topicId ?? null, score, attempts },
+        update: { score, attempts, ...(topicId ? { topicId } : {}) },
       });
     });
   }
