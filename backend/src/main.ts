@@ -65,10 +65,13 @@ async function bootstrap() {
     console.warn(
       'FRONTEND_URL is not set — CORS is wide open. Set it in production.',
     );
-    app.enableCors({ origin: true });
-  } else {
-    app.enableCors({ origin: buildOriginChecker() });
   }
+  console.log('CORS origin check active. FRONTEND_URL =', frontendUrl ?? '(unset)');
+  app.enableCors({
+    origin: frontendUrl ? buildOriginChecker() : true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
 
   const port = process.env.PORT ?? 8080;
   await app.listen(port);
