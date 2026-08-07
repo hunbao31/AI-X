@@ -20,6 +20,9 @@ export interface ExercisePayload {
   topicId?: string | null;
   answer: string;
   options?: string[];
+  // Only meaningful when not linked to a class topic — ignored server-side
+  // otherwise (topic-linked questions are already private to that class).
+  isPublic?: boolean;
 }
 
 interface ExerciseFormProps {
@@ -66,6 +69,9 @@ export function ExerciseForm({
       : EMPTY_OPTIONS;
   });
   const [answer, setAnswer] = useState(initial?.answer ?? '');
+  // Only relevant for free-standing questions (no class topic) — defaults
+  // private for new questions, matching the current row's value when editing.
+  const [isPublic, setIsPublic] = useState(initial?.isPublic ?? false);
 
   // Optional class-topic link — unused entirely when isLocked.
   const [classes, setClasses] = useState<ClassSummary[]>([]);
@@ -118,6 +124,7 @@ export function ExerciseForm({
       answer,
       options:
         type === 'mcq' ? options.filter((o) => o.trim() !== '') : undefined,
+      isPublic,
     });
   }
 
@@ -238,6 +245,21 @@ export function ExerciseForm({
             className="input-base"
           />
         </div>
+      )}
+
+      {!isLocked && !selectedTopicId && (
+        <label className="flex items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
+            className="h-4 w-4 rounded border-white/20 bg-white/5 accent-indigo-500"
+          />
+          Công khai trong ngân hàng chung
+          <span className="text-slate-500">
+            (học sinh khác có thể luyện tập câu này — mặc định riêng tư)
+          </span>
+        </label>
       )}
 
       {type === 'mcq' ? (

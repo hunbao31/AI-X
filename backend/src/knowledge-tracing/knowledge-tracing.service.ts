@@ -4,6 +4,8 @@ import {
   ClassStudentInput,
   ClassTopicReport,
   InteractionTuple,
+  PredictClassResponse,
+  PredictStudentResponse,
   StudentStepResult,
 } from './knowledge-tracing.types';
 
@@ -121,19 +123,24 @@ export class KnowledgeTracingService {
     return parsed as T;
   }
 
-  predictStudent(interactions: InteractionTuple[]): Promise<StudentStepResult[]> {
-    return this.callModel<StudentStepResult[]>(
+  // Model API boc ket qua trong { ket_qua: [...] } / { chu_de_ket_qua: [...] }
+  // thay vi tra mang tran -- unwrap ngay tai day de moi noi goi
+  // predictStudent/predictClass van nhan dung mang nhu chu ky ham khai bao.
+  async predictStudent(interactions: InteractionTuple[]): Promise<StudentStepResult[]> {
+    const res = await this.callModel<PredictStudentResponse>(
       '/predict_student',
       { interactions },
       STUDENT_TIMEOUT_MS,
     );
+    return res.ket_qua;
   }
 
-  predictClass(students: ClassStudentInput[]): Promise<ClassTopicReport[]> {
-    return this.callModel<ClassTopicReport[]>(
+  async predictClass(students: ClassStudentInput[]): Promise<ClassTopicReport[]> {
+    const res = await this.callModel<PredictClassResponse>(
       '/predict_class',
       { students },
       CLASS_TIMEOUT_MS,
     );
+    return res.chu_de_ket_qua;
   }
 }

@@ -456,52 +456,75 @@ export class SetsService {
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
-    const options = [dto?.optionA, dto?.optionB, dto?.optionC, dto?.optionD]
-      .map((o) => o?.trim() ?? '')
-      .filter((o) => o !== '');
-    if (options.length < 2) {
-      throw apiError(
-        'VALIDATION_ERROR',
-        'Cần ít nhất hai lựa chọn (A và B).',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
-    }
-    if (new Set(options.map((o) => o.toLowerCase())).size !== options.length) {
-      throw apiError(
-        'VALIDATION_ERROR',
-        'Các lựa chọn phải khác nhau.',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
-    }
-    const correctRaw = dto?.correctAnswer?.trim();
-    if (!correctRaw) {
-      throw apiError(
-        'VALIDATION_ERROR',
-        'correctAnswer là bắt buộc.',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
-    }
-    const resolved = resolveAnswerFromOptions(options, correctRaw);
-    if (resolved.error) {
-      throw apiError('VALIDATION_ERROR', resolved.error, HttpStatus.UNPROCESSABLE_ENTITY);
-    }
+    const type: 'mcq' | 'text' = dto?.type === 'text' ? 'text' : 'mcq';
     const difficulty: Difficulty =
       dto?.difficulty && ['easy', 'medium', 'hard'].includes(dto.difficulty)
         ? dto.difficulty
         : 'medium';
 
+    let options: string[] | undefined;
+    let answer: string;
+
+    if (type === 'text') {
+      const trimmed = dto?.correctAnswer?.trim();
+      if (!trimmed) {
+        throw apiError(
+          'VALIDATION_ERROR',
+          'Đáp án là bắt buộc.',
+          HttpStatus.UNPROCESSABLE_ENTITY,
+        );
+      }
+      answer = trimmed;
+      options = undefined;
+    } else {
+      const mcqOptions = [dto?.optionA, dto?.optionB, dto?.optionC, dto?.optionD]
+        .map((o) => o?.trim() ?? '')
+        .filter((o) => o !== '');
+      if (mcqOptions.length < 2) {
+        throw apiError(
+          'VALIDATION_ERROR',
+          'Cần ít nhất hai lựa chọn (A và B).',
+          HttpStatus.UNPROCESSABLE_ENTITY,
+        );
+      }
+      if (new Set(mcqOptions.map((o) => o.toLowerCase())).size !== mcqOptions.length) {
+        throw apiError(
+          'VALIDATION_ERROR',
+          'Các lựa chọn phải khác nhau.',
+          HttpStatus.UNPROCESSABLE_ENTITY,
+        );
+      }
+      const correctRaw = dto?.correctAnswer?.trim();
+      if (!correctRaw) {
+        throw apiError(
+          'VALIDATION_ERROR',
+          'correctAnswer là bắt buộc.',
+          HttpStatus.UNPROCESSABLE_ENTITY,
+        );
+      }
+      const resolved = resolveAnswerFromOptions(mcqOptions, correctRaw);
+      if (resolved.error) {
+        throw apiError('VALIDATION_ERROR', resolved.error, HttpStatus.UNPROCESSABLE_ENTITY);
+      }
+      answer = resolved.answer as string;
+      options = mcqOptions;
+    }
+
     return this.prisma.$transaction(async (tx) => {
       const exercise = await tx.exercise.create({
         data: {
           question,
-          type: 'mcq',
+          type,
           options,
-          answer: resolved.answer as string,
+          answer,
           difficulty,
           // No natural "topic" in the fast-authoring flow — group by the set
           // itself so the personal bank stays meaningfully organized.
           topic: set.title,
           createdBy: user.sub,
+          // Free-standing (no class topicId here) — defaults private, same
+          // as a question authored via "Tạo bài tập" (see ExercisesService.create).
+          isPublic: false,
         },
       });
 
@@ -1061,11 +1084,14 @@ export class SetsService {
       where: { userId_topic: { userId: user.sub, topic } },
     });
 
-    const picked = await this.exercisesService.pickRandom({
-      topic,
-      count: QUICK_QUIZ_SIZE,
-      masteryScore: mastery?.score,
-    });
+    const picked = await this.exercisesService.pickRandom(
+      {
+        topic,
+        count: QUICK_QUIZ_SIZE,
+        masteryScore: mastery?.score,
+      },
+      user,
+    );
 
     const questions: PlayableQuestion[] = picked.map((exercise, i) => ({
       exerciseId: exercise.id,

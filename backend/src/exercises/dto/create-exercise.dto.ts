@@ -12,6 +12,10 @@ export class CreateExerciseDto {
   topic?: string;
   // Optional link to a class Topic; when set, `topic` mirrors Topic.name.
   topicId?: string | null;
+  // Only meaningful when topicId is unset — a topic-linked question is
+  // already private to that class regardless of this flag. Defaults to
+  // false (private) for newly-created free-standing questions.
+  isPublic?: boolean;
 }
 
 // PATCH payload — every field optional; merged over the existing row and
@@ -25,6 +29,7 @@ export class UpdateExerciseDto {
   tags?: string[];
   topic?: string;
   topicId?: string | null;
+  isPublic?: boolean;
 }
 
 export class ImportExercisesDto {

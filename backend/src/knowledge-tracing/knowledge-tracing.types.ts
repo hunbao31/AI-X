@@ -25,5 +25,16 @@ export interface ClassTopicReport {
   ty_le_do: number;
   ty_le_vang: number;
   ty_le_xanh: number;
-  muc_do_hieu_trung_binh: number;
+  // null khi khong co hoc sinh nao co du lieu cho chu de nay (so_hoc_sinh=0).
+  muc_do_hieu_trung_binh: number | null;
+}
+
+// Model API boc ket qua trong 1 object thay vi tra mang tran -- xem
+// KnowledgeTracingService.callModel.
+export interface PredictStudentResponse {
+  ket_qua: StudentStepResult[];
+}
+
+export interface PredictClassResponse {
+  chu_de_ket_qua: ClassTopicReport[];
 }

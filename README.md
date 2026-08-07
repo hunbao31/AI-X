@@ -1,4 +1,4 @@
-# EduAI — AI Education Platform
+# AI-X — AI Education Platform
 
 An AI-powered all-in-one learning platform combining classroom management
 (Google Classroom), quiz sets (Kahoot), mastery tracking (Khan Academy),

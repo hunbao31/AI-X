@@ -5,7 +5,15 @@ import Link from 'next/link';
 import { apiGet } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { MathText } from '@/components/ui/MathText';
-import type { ClassSummary } from '@/lib/types';
+import type { ClassSummary, ClassTopicReport } from '@/lib/types';
+
+interface ClassAiSummary {
+  classId: string;
+  className: string;
+  percent: number | null; // null = chưa có dữ liệu chẩn đoán nào cho lớp này
+  loading: boolean;
+  error: string | null;
+}
 
 interface TeacherStats {
   totalExercises: number;
@@ -55,6 +63,7 @@ export default function TeacherDashboardPage() {
   const [classes, setClasses] = useState<ClassSummary[]>([]);
   const [questions, setQuestions] = useState<QuestionAnalytics[]>([]);
   const [setStatsList, setSetStatsList] = useState<SetAnalytics[]>([]);
+  const [classReports, setClassReports] = useState<ClassAiSummary[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -76,6 +85,61 @@ export default function TeacherDashboardPage() {
       )
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (classes.length === 0) return;
+
+    setClassReports(
+      classes.map((c) => ({
+        classId: c.id,
+        className: c.name,
+        percent: null,
+        loading: true,
+        error: null,
+      })),
+    );
+
+    classes.forEach((c) => {
+      apiGet<ClassTopicReport[]>(`/api/v1/diagnostic/classes/${c.id}/report`)
+        .then((topics) => {
+          // Chi tinh tren cac chu de thuc su co hoc sinh lam bai (so_hoc_sinh
+          // > 0) -- cac chu de con lai co muc_do_hieu_trung_binh = null.
+          const withData = topics.filter(
+            (t) => t.so_hoc_sinh > 0 && t.muc_do_hieu_trung_binh !== null,
+          );
+          const totalStudents = withData.reduce((sum, t) => sum + t.so_hoc_sinh, 0);
+          // Trung binh gia quyen theo so hoc sinh moi chu de -- chu de nhieu
+          // hoc sinh co du lieu hon thi anh huong nhieu hon toi con so chung.
+          const percent =
+            withData.length === 0
+              ? null
+              : Math.round(
+                  (withData.reduce(
+                    (sum, t) => sum + (t.muc_do_hieu_trung_binh as number) * t.so_hoc_sinh,
+                    0,
+                  ) /
+                    totalStudents) *
+                    100,
+                );
+          setClassReports((prev) =>
+            prev.map((r) => (r.classId === c.id ? { ...r, percent, loading: false } : r)),
+          );
+        })
+        .catch((err) => {
+          setClassReports((prev) =>
+            prev.map((r) =>
+              r.classId === c.id
+                ? {
+                    ...r,
+                    loading: false,
+                    error: err instanceof Error ? err.message : 'Không thể tải.',
+                  }
+                : r,
+            ),
+          );
+        });
+    });
+  }, [classes]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -125,6 +189,49 @@ export default function TeacherDashboardPage() {
               </Link>
             ))}
           </div>
+
+          {classReports.length > 0 && (
+            <Card className="space-y-3">
+              <h2 className="text-lg font-semibold text-white">
+                Mức độ hiểu theo lớp (AI)
+              </h2>
+              <div className="space-y-2">
+                {classReports.map((r) => (
+                  <div
+                    key={r.classId}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 p-3"
+                  >
+                    <span className="truncate text-sm font-medium text-white">
+                      {r.className}
+                    </span>
+                    {r.loading ? (
+                      <span className="shrink-0 text-xs text-slate-400">Đang tính…</span>
+                    ) : r.error ? (
+                      <span className="shrink-0 text-xs text-red-400">
+                        Không tải được
+                      </span>
+                    ) : r.percent === null ? (
+                      <span className="shrink-0 text-xs text-slate-500">
+                        Chưa có dữ liệu chẩn đoán
+                      </span>
+                    ) : (
+                      <span
+                        className={`shrink-0 text-sm font-bold ${
+                          r.percent < 50
+                            ? 'text-red-300'
+                            : r.percent < 75
+                              ? 'text-yellow-300'
+                              : 'text-green-300'
+                        }`}
+                      >
+                        {r.percent}% hiểu bài
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
           {questions.length > 0 && (
             <Card className="space-y-3">

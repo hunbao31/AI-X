@@ -491,8 +491,6 @@ export default function QuizPlayerPage() {
                 <Badge tone="green">công khai</Badge>
               ) : set.class ? (
                 <Badge tone="indigo">{set.class.name}</Badge>
-              ) : set.hasAccessCode ? (
-                <Badge tone="yellow">cần mã</Badge>
               ) : null}
             </div>
           </div>

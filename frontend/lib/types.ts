@@ -29,6 +29,9 @@ export interface Exercise {
   difficulty: Difficulty;
   topic: string;
   topicId: string | null;
+  // Only meaningful when topicId is null — a topic-linked question is
+  // already private to that class regardless of this flag.
+  isPublic: boolean;
   createdBy: string;
   createdAt: string;
 }
@@ -310,7 +313,7 @@ export interface ForumAuthor {
 
 export interface ForumPostSummary {
   id: string;
-  imageUrl: string;
+  imageUrl: string | null;
   description: string | null;
   answerCount: number;
   rewardScore: number;
@@ -409,6 +412,18 @@ export interface DiagnosticExercise {
   createdAt: string;
 }
 
+export interface PendingReviewItem {
+  attemptId: string;
+  studentUsername: string;
+  question: string;
+  dapAnMau: string;
+  cauTraLoi: string;
+  // Chi de xem trong "Chi tiet ky thuat" (thu gon mac dinh) -- KHONG dung de
+  // sap xep hay goi y dung/sai, xem backend/src/diagnostic/phobert-similarity.service.ts.
+  similarityScore: number | null;
+  createdAt: string;
+}
+
 // --- Student-facing chuong/bai catalog + practice + AI report ---
 // Field names in StudentStepResult/ClassTopicReport mirror the external KT
 // model API's own Vietnamese-no-diacritics JSON keys verbatim — see
@@ -437,11 +452,17 @@ export interface StudentStepResult {
   tien_de_thieu: string[];
 }
 
+export interface ClassStudentReport {
+  userId: string;
+  username: string;
+  percent: number | null;
+}
+
 export interface ClassTopicReport {
   chu_de: string;
   so_hoc_sinh: number;
   ty_le_do: number;
   ty_le_vang: number;
   ty_le_xanh: number;
-  muc_do_hieu_trung_binh: number;
+  muc_do_hieu_trung_binh: number | null;
 }

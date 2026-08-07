@@ -54,16 +54,16 @@ export function CreatePostForm({ basePath }: CreatePostFormProps) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!image) {
-      setError('Vui lòng thêm ảnh cho câu hỏi của bạn.');
+    if (!description.trim()) {
+      setError('Vui lòng nhập nội dung câu hỏi của bạn.');
       return;
     }
     setError('');
     setSubmitting(true);
     try {
       const form = new FormData();
-      form.append('image', image);
-      if (description.trim()) form.append('description', description.trim());
+      form.append('description', description.trim());
+      if (image) form.append('image', image);
       if (selectedTopicId) form.append('topicId', selectedTopicId);
       else if (selectedClassId) form.append('classId', selectedClassId);
 
@@ -83,15 +83,14 @@ export function CreatePostForm({ basePath }: CreatePostFormProps) {
         <h1 className="text-2xl font-bold text-white">Hỏi cộng đồng</h1>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <ImagePicker onChange={setImage} disabled={submitting} />
-
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-300">
-              Mô tả <span className="text-slate-500">(không bắt buộc)</span>
+              Mô tả
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              required
               rows={3}
               maxLength={1000}
               placeholder="Bạn đang gặp khó khăn ở đâu? Hỗ trợ LaTeX: $x^2$"
@@ -105,6 +104,13 @@ export function CreatePostForm({ basePath }: CreatePostFormProps) {
                 <MathText text={description} />
               </div>
             )}
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-300">
+              Ảnh <span className="text-slate-500">(không bắt buộc)</span>
+            </label>
+            <ImagePicker onChange={setImage} disabled={submitting} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -158,7 +164,7 @@ export function CreatePostForm({ basePath }: CreatePostFormProps) {
 
           {error && <p className="text-sm text-red-400">{error}</p>}
 
-          <Button type="submit" disabled={submitting || !image} className="w-full">
+          <Button type="submit" disabled={submitting || !description.trim()} className="w-full">
             {submitting ? 'Đang đăng…' : 'Đăng câu hỏi'}
           </Button>
         </form>

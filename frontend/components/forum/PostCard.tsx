@@ -24,15 +24,17 @@ export function PostCard({ post, basePath }: PostCardProps) {
     <motion.div variants={fadeSlideUp}>
       <Link href={`${basePath}/${post.id}`} className="block">
         <div className="overflow-hidden rounded-2xl border border-white/20 bg-white/10 shadow-xl backdrop-blur-xl transition-transform duration-200 hover:scale-[1.01]">
-          <div className="aspect-[4/3] w-full overflow-hidden bg-black/20">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={resolveImageUrl(post.imageUrl)}
-              alt="Câu hỏi"
-              loading="lazy"
-              className="h-full w-full object-cover"
-            />
-          </div>
+          {post.imageUrl && (
+            <div className="aspect-[4/3] w-full overflow-hidden bg-black/20">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={resolveImageUrl(post.imageUrl)}
+                alt="Câu hỏi"
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+            </div>
+          )}
 
           <div className="space-y-3 p-4">
             <div className="flex items-center justify-between gap-2">
@@ -48,7 +50,13 @@ export function PostCard({ post, basePath }: PostCardProps) {
             </div>
 
             {post.description && (
-              <p className="line-clamp-2 text-sm text-slate-300">
+              <p
+                className={
+                  post.imageUrl
+                    ? 'line-clamp-2 text-sm text-slate-300'
+                    : 'line-clamp-4 text-sm text-slate-300'
+                }
+              >
                 <MathText text={post.description} />
               </p>
             )}

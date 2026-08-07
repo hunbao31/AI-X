@@ -4,11 +4,11 @@ import { useRef, useState, FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiPost, apiPatch } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
+import { MathText } from '@/components/ui/MathText';
 import { QuestionEditor } from './QuestionEditor';
 import { popIn } from '@/lib/animations';
-import type { SetItem, Exercise, Difficulty } from '@/lib/types';
+import type { SetItem, Exercise, Difficulty, ExerciseType } from '@/lib/types';
 
-const LETTERS = ['A', 'B', 'C', 'D'];
 const EMPTY_OPTIONS = ['', '', '', ''];
 
 interface QuizBuilderProps {
@@ -18,15 +18,19 @@ interface QuizBuilderProps {
 }
 
 // The primary way questions get into a set: authored right here, not
-// picked from a separate bank browse-and-attach flow. Reordering is native
-// HTML5 drag-and-drop (no extra dependency) with an optimistic local
-// reorder that reverts if the server call fails.
+// picked from a separate bank browse-and-attach flow. Field layout/labels
+// mirror ExerciseForm.tsx (teacher/create) 1:1 — same conceptual task, kept
+// visually consistent even though this posts to a different, atomic
+// "create + attach to set" endpoint rather than a standalone Exercise.
+// Reordering is native HTML5 drag-and-drop (no extra dependency) with an
+// optimistic local reorder that reverts if the server call fails.
 export function QuizBuilder({ setId, items, onItemsChange }: QuizBuilderProps) {
   const [showAddForm, setShowAddForm] = useState(items.length === 0);
   const [question, setQuestion] = useState('');
-  const [options, setOptions] = useState<string[]>(EMPTY_OPTIONS);
-  const [correctIndex, setCorrectIndex] = useState(0);
+  const [type, setType] = useState<ExerciseType>('mcq');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
+  const [options, setOptions] = useState<string[]>(EMPTY_OPTIONS);
+  const [answer, setAnswer] = useState('');
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState('');
 
@@ -36,35 +40,57 @@ export function QuizBuilder({ setId, items, onItemsChange }: QuizBuilderProps) {
 
   function resetForm() {
     setQuestion('');
-    setOptions(EMPTY_OPTIONS);
-    setCorrectIndex(0);
+    setType('mcq');
     setDifficulty('medium');
+    setOptions(EMPTY_OPTIONS);
+    setAnswer('');
+  }
+
+  function updateOption(i: number, value: string) {
+    setOptions((prev) => prev.map((o, idx) => (idx === i ? value : o)));
   }
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
-    const trimmedOptions = options.map((o) => o.trim()).filter((o) => o !== '');
-    if (trimmedOptions.length < 2) {
-      setAddError('Cần ít nhất 2 đáp án.');
-      return;
-    }
-    const correctText = options[correctIndex]?.trim();
-    if (!correctText) {
-      setAddError('Chọn một đáp án đúng.');
-      return;
-    }
-    setAdding(true);
     setAddError('');
-    try {
-      const item = await apiPost<SetItem>(`/api/v1/sets/${setId}/questions`, {
+
+    let payload: Record<string, unknown>;
+    if (type === 'mcq') {
+      const trimmedOptions = options.map((o) => o.trim()).filter((o) => o !== '');
+      if (trimmedOptions.length < 2) {
+        setAddError('Cần ít nhất 2 lựa chọn.');
+        return;
+      }
+      if (!answer.trim()) {
+        setAddError('Nhập đáp án đúng.');
+        return;
+      }
+      payload = {
         question: question.trim(),
+        type: 'mcq',
         optionA: options[0],
         optionB: options[1],
         optionC: options[2] || undefined,
         optionD: options[3] || undefined,
-        correctAnswer: correctText,
+        correctAnswer: answer.trim(),
         difficulty,
-      });
+      };
+    } else {
+      if (!answer.trim()) {
+        setAddError('Nhập đáp án.');
+        return;
+      }
+      payload = {
+        question: question.trim(),
+        type: 'text',
+        correctAnswer: answer.trim(),
+        difficulty,
+      };
+    }
+
+    setAdding(true);
+    try {
+      const item = await apiPost<SetItem>(`/api/v1/sets/${setId}/questions`, payload);
       onItemsChange([...items, item]);
       resetForm();
     } catch (err) {
@@ -145,58 +171,107 @@ export function QuizBuilder({ setId, items, onItemsChange }: QuizBuilderProps) {
           initial="hidden"
           animate="show"
           onSubmit={handleAdd}
-          className="space-y-3 rounded-2xl border border-indigo-400/30 bg-indigo-500/5 p-4"
+          className="space-y-5 rounded-2xl border border-indigo-400/30 bg-indigo-500/5 p-4"
         >
           <h3 className="text-sm font-semibold text-white">Câu hỏi mới</h3>
-          <textarea
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            required
-            rows={2}
-            placeholder="Nội dung câu hỏi — hỗ trợ LaTeX: $x^2$"
-            className="input-base"
-          />
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {options.map((opt, i) => (
-              <label
-                key={i}
-                className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors duration-200 ${
-                  correctIndex === i
-                    ? 'border-green-400/50 bg-green-500/10'
-                    : 'border-white/15 bg-white/5'
-                }`}
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-300">
+              Câu hỏi{' '}
+              <span className="text-slate-500">
+                (hỗ trợ LaTeX: $x^2$ dạng dòng, $$\frac{'{a}{b}'}$$ dạng khối)
+              </span>
+            </label>
+            <textarea
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              required
+              rows={3}
+              className="input-base"
+            />
+            {question.includes('$') && (
+              <div className="mt-2 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">
+                <span className="mr-2 text-xs uppercase tracking-wide text-slate-500">
+                  Xem trước
+                </span>
+                <MathText text={question} />
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300">Loại</label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value as ExerciseType)}
+                className="input-base"
               >
+                <option value="mcq">Trắc nghiệm</option>
+                <option value="text">Tự luận</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                Độ khó
+              </label>
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+                className="input-base"
+              >
+                <option value="easy">Dễ</option>
+                <option value="medium">Trung bình</option>
+                <option value="hard">Khó</option>
+              </select>
+            </div>
+          </div>
+
+          {type === 'mcq' ? (
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-slate-300">Các lựa chọn</label>
+              {options.map((opt, i) => (
                 <input
-                  type="radio"
-                  name="new-question-correct"
-                  checked={correctIndex === i}
-                  onChange={() => setCorrectIndex(i)}
-                  className="accent-green-500"
-                />
-                <span className="w-5 shrink-0 font-bold text-slate-400">{LETTERS[i]}</span>
-                <input
+                  key={i}
                   type="text"
                   value={opt}
-                  onChange={(e) =>
-                    setOptions((prev) => prev.map((o, idx) => (idx === i ? e.target.value : o)))
-                  }
-                  placeholder={i < 2 ? `Đáp án ${LETTERS[i]} (bắt buộc)` : `Đáp án ${LETTERS[i]}`}
-                  required={i < 2}
-                  className="min-w-0 flex-1 bg-transparent text-white placeholder:text-slate-500 focus:outline-none"
+                  onChange={(e) => updateOption(i, e.target.value)}
+                  placeholder={`Lựa chọn ${i + 1}`}
+                  className="input-base"
                 />
+              ))}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                  Đáp án đúng
+                </label>
+                <input
+                  type="text"
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  required
+                  placeholder="Phải khớp với một trong các lựa chọn ở trên"
+                  className="input-base"
+                />
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                Đáp án
               </label>
-            ))}
-          </div>
+              <input
+                type="text"
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                required
+                className="input-base"
+              />
+            </div>
+          )}
+
+          {addError && <p className="text-sm text-red-400">{addError}</p>}
+
           <div className="flex flex-wrap items-center gap-3">
-            <select
-              value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value as Difficulty)}
-              className="input-base w-40"
-            >
-              <option value="easy">Dễ</option>
-              <option value="medium">Trung bình</option>
-              <option value="hard">Khó</option>
-            </select>
             <Button type="submit" disabled={adding}>
               {adding ? 'Đang thêm…' : '+ Thêm câu hỏi'}
             </Button>
@@ -214,7 +289,6 @@ export function QuizBuilder({ setId, items, onItemsChange }: QuizBuilderProps) {
               </Button>
             )}
           </div>
-          {addError && <p className="text-sm text-red-400">{addError}</p>}
         </motion.form>
       )}
     </div>

@@ -55,47 +55,15 @@ export class ForumService {
     file: Express.Multer.File | undefined,
     dto: CreateForumPostDto,
   ) {
-    if (!file) {
+    const description = dto.description?.trim() || '';
+    if (!description) {
       throw apiError(
-        'IMAGE_REQUIRED',
-        'Cần có hình ảnh cho câu hỏi của bạn.',
+        'DESCRIPTION_REQUIRED',
+        'Cần có nội dung câu hỏi.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
-    const sniffed = sniffImageMime(file.buffer);
-    if (!sniffed) {
-      throw apiError(
-        'INVALID_IMAGE',
-        'Tệp này không giống định dạng JPEG, PNG, WebP hoặc GIF hợp lệ.',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
-    }
-
-    // Duplicate-check before the rate limit: it's the more specific,
-    // actionable message when both would fire (re-submitting the exact same
-    // photo quickly), and it doesn't require slowing the user down when
-    // what's actually wrong is that this exact image already exists.
-    const hash = hashImage(file.buffer);
-    const recentDuplicate = await this.prisma.forumPost.findFirst({
-      where: {
-        authorId: user.sub,
-        imageHash: hash,
-        createdAt: { gte: new Date(Date.now() - DUPLICATE_IMAGE_WINDOW_MS) },
-      },
-      select: { id: true },
-    });
-    if (recentDuplicate) {
-      throw apiError(
-        'DUPLICATE_IMAGE',
-        'Bạn đã đăng hình ảnh này gần đây rồi.',
-        HttpStatus.CONFLICT,
-      );
-    }
-
-    await this.assertNotRateLimited(user.sub);
-
-    const description = dto.description?.trim() || null;
-    if (description && description.length > MAX_DESCRIPTION_LENGTH) {
+    if (description.length > MAX_DESCRIPTION_LENGTH) {
       throw apiError(
         'VALIDATION_ERROR',
         `Mô tả không được vượt quá ${MAX_DESCRIPTION_LENGTH} ký tự.`,
@@ -103,13 +71,50 @@ export class ForumService {
       );
     }
 
+    // Image is optional now — everything below only runs when one was sent.
+    let sniffed: string | null = null;
+    let imageHash: string | null = null;
+    if (file) {
+      sniffed = sniffImageMime(file.buffer);
+      if (!sniffed) {
+        throw apiError(
+          'INVALID_IMAGE',
+          'Tệp này không giống định dạng JPEG, PNG, WebP hoặc GIF hợp lệ.',
+          HttpStatus.UNPROCESSABLE_ENTITY,
+        );
+      }
+
+      // Duplicate-check before the rate limit: it's the more specific,
+      // actionable message when both would fire (re-submitting the exact
+      // same photo quickly), and it doesn't require slowing the user down
+      // when what's actually wrong is that this exact image already exists.
+      imageHash = hashImage(file.buffer);
+      const recentDuplicate = await this.prisma.forumPost.findFirst({
+        where: {
+          authorId: user.sub,
+          imageHash,
+          createdAt: { gte: new Date(Date.now() - DUPLICATE_IMAGE_WINDOW_MS) },
+        },
+        select: { id: true },
+      });
+      if (recentDuplicate) {
+        throw apiError(
+          'DUPLICATE_IMAGE',
+          'Bạn đã đăng hình ảnh này gần đây rồi.',
+          HttpStatus.CONFLICT,
+        );
+      }
+    }
+
+    await this.assertNotRateLimited(user.sub);
+
     const scope = await this.resolveScope(user, dto.topicId, dto.classId);
-    const imageUrl = await saveForumImage(file.buffer, sniffed);
+    const imageUrl = file && sniffed ? await saveForumImage(file.buffer, sniffed) : null;
 
     return this.prisma.forumPost.create({
       data: {
         imageUrl,
-        imageHash: hash,
+        imageHash,
         description,
         authorId: user.sub,
         topicId: scope.topicId,

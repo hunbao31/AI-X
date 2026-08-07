@@ -65,10 +65,14 @@ export class AddExerciseToSetDto {
 // call, instead of "create in the bank, then add from the bank" — mirrors
 // the CSV row shape (optionA-D + a letter-or-text correctAnswer) so the
 // same resolveAnswerFromOptions() helper backs both paths identically.
+// type defaults to 'mcq' when omitted (older callers keep working
+// unchanged); optionA-D are ignored when type is 'text', correctAnswer is
+// used verbatim as the accepted free-response answer in that case.
 export class CreateInlineQuestionDto {
   question!: string;
-  optionA!: string;
-  optionB!: string;
+  type?: 'mcq' | 'text';
+  optionA?: string;
+  optionB?: string;
   optionC?: string;
   optionD?: string;
   correctAnswer!: string;

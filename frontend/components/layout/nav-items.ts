@@ -9,6 +9,7 @@ export interface NavItem {
 
 export const STUDENT_NAV: NavItem[] = [
   { href: '/dashboard', label: 'Trang tổng quan', icon: '📊' },
+  { href: '/classes', label: 'Lớp học', icon: '🏫' },
   { href: '/practice', label: 'Luyện tập', icon: '✏️' },
   { href: '/quizzes', label: 'Trắc nghiệm', icon: '🎯' },
   { href: '/quick-quiz', label: 'Trắc nghiệm nhanh', icon: '🎲' },

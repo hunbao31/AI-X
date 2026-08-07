@@ -10,7 +10,7 @@ export function StudentSidebar() {
   return (
     <aside className="hidden h-screen w-64 flex-col border-r border-white/10 bg-white/5 p-6 backdrop-blur-xl md:flex">
       <div className="mb-8 bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
-        EduAI
+        AI-X
       </div>
       <span className="mb-4 px-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
         Học sinh

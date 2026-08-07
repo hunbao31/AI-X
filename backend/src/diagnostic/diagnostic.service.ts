@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { apiError } from '../common/api-envelope';
 import { ClassesService } from '../classes/classes.service';
+import { PhobertSimilarityService } from './phobert-similarity.service';
 import {
   KnowledgeTracingService,
 } from '../knowledge-tracing/knowledge-tracing.service';
@@ -65,12 +66,25 @@ export interface StudentCatalogChuong {
   bai: StudentCatalogBai[];
 }
 
+export interface PendingReviewItem {
+  attemptId: string;
+  studentUsername: string;
+  question: string;
+  dapAnMau: string;
+  cauTraLoi: string;
+  // similarityScore CHI de xem "chi tiet ky thuat" (thu gon mac dinh) --
+  // KHONG dung de sap xep hay goi y dung/sai, xem PhobertSimilarityService.
+  similarityScore: number | null;
+  createdAt: Date;
+}
+
 @Injectable()
 export class DiagnosticService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly classesService: ClassesService,
     private readonly knowledgeTracingService: KnowledgeTracingService,
+    private readonly phobertSimilarityService: PhobertSimilarityService,
   ) {}
 
   // Nhom bang SkillCatalog (DB) theo chuongSgk -> baiSgk -> skillCode, kem co
@@ -236,6 +250,18 @@ export class DiagnosticService {
       );
     }
 
+    if (exercise.answerType === 'tu_luan') {
+      return this.submitTuLuanAnswer(exercise, answer, user);
+    }
+
+    if (exercise.answer == null) {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'Câu hỏi trắc nghiệm bị thiếu đáp án.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
     // Trac nghiem A/B/C/D -- dung, khac chu hoa/thuong va khoang trang thua
     // deu tinh la dung (khop quy uoc answersMatch cua sets.service.ts).
     const correct = answer.toLowerCase() === exercise.answer.trim().toLowerCase();
@@ -251,6 +277,45 @@ export class DiagnosticService {
     });
 
     return { correct, correctAnswer: exercise.answer };
+  }
+
+  // Cham tu_luan bang PhoBERT similarity -- CHI luu similarityScore de phan
+  // tich/nghien cuu sau nay, KHONG bao gio dung diem nay de suy ra correct
+  // hay hien bat ky "goi y dung/sai" nao. Thuc nghiem (Buoc 2) cho thay 1 cau
+  // SAI ban chat, dao nguoc ket luan nhung dung tu vung gan giong dap an mau,
+  // van cho similarity CAO HON ca cau dung that -- similarity thuan tuy
+  // KHONG dang tin lam tin hieu quyet dinh. Vi vay MOI cau tu_luan deu
+  // needsTeacherReview=true, correct=null, khong co ngoai le "diem cao thi
+  // bo qua duyet".
+  private async submitTuLuanAnswer(
+    exercise: { id: string; skillCode: string; dapAnMau: string | null },
+    answer: string,
+    user: AuthenticatedUser,
+  ) {
+    if (!exercise.dapAnMau) {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'Câu hỏi tự luận bị thiếu đáp án mẫu.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const { similarity_score: similarityScore } =
+      await this.phobertSimilarityService.computeSimilarity(answer, exercise.dapAnMau);
+
+    await this.prisma.diagnosticAttempt.create({
+      data: {
+        userId: user.sub,
+        diagnosticExerciseId: exercise.id,
+        skillCode: exercise.skillCode,
+        answer,
+        correct: null,
+        similarityScore,
+        needsTeacherReview: true,
+      },
+    });
+
+    return { correct: null, needsTeacherReview: true };
   }
 
   // Bao cao AI cho ca lop (giao vien) -- gop lich su DiagnosticAttempt cua
@@ -272,14 +337,16 @@ export class DiagnosticService {
 
     const students = await Promise.all(
       members.map(async (m) => {
+        // correct: { not: null } -- loai bo cau tu_luan dang cho giao vien
+        // duyet khoi lich su gui cho model KT, tranh tinh nham thanh "sai".
         const attempts = await this.prisma.diagnosticAttempt.findMany({
-          where: { userId: m.userId },
+          where: { userId: m.userId, correct: { not: null } },
           orderBy: { createdAt: 'asc' },
           select: { skillCode: true, correct: true },
         });
         const interactions: InteractionTuple[] = attempts.map((a) => [
           a.skillCode,
-          a.correct ? 1 : 0,
+          a.correct === true ? 1 : 0,
         ]);
         return { id: m.userId, interactions };
       }),
@@ -291,10 +358,59 @@ export class DiagnosticService {
     return this.knowledgeTracingService.predictClass(withHistory);
   }
 
+  // Bao cao AI theo TUNG hoc sinh trong lop (khac getClassReport o tren, chi
+  // tra trung binh theo chu de chung ca lop, khong tach tung nguoi) -- goi
+  // predictStudent rieng cho moi thanh vien, gop ket qua cac chu de cua rieng
+  // ho thanh 1 con so % duy nhat (trung binh don gian, khong gia quyen vi day
+  // la du lieu cua 1 nguoi, khong phai gop nhieu nguoi nhu getClassReport).
+  async getClassStudentReports(
+    classId: string,
+    user: AuthenticatedUser,
+  ): Promise<{ userId: string; username: string; percent: number | null }[]> {
+    await this.classesService.assertTeacherOf(classId, user);
+
+    const members = await this.prisma.classMember.findMany({
+      where: { classId, role: 'student' },
+      select: { userId: true, user: { select: { username: true } } },
+    });
+    if (members.length === 0) return [];
+
+    const results = await Promise.all(
+      members.map(async (m) => {
+        // correct: { not: null } -- loai bo cau tu_luan dang cho giao vien
+        // duyet khoi lich su gui cho model KT, tranh tinh nham thanh "sai".
+        const attempts = await this.prisma.diagnosticAttempt.findMany({
+          where: { userId: m.userId, correct: { not: null } },
+          orderBy: { createdAt: 'asc' },
+          select: { skillCode: true, correct: true },
+        });
+        if (attempts.length === 0) {
+          return { userId: m.userId, username: m.user.username, percent: null };
+        }
+        const interactions: InteractionTuple[] = attempts.map((a) => [
+          a.skillCode,
+          a.correct === true ? 1 : 0,
+        ]);
+        const steps = await this.knowledgeTracingService.predictStudent(interactions);
+        const percent =
+          steps.length === 0
+            ? null
+            : Math.round(
+                (steps.reduce((sum, s) => sum + s.phan_tram_hieu, 0) / steps.length) * 100,
+              );
+        return { userId: m.userId, username: m.user.username, percent };
+      }),
+    );
+
+    return results.sort((a, b) => (b.percent ?? -1) - (a.percent ?? -1));
+  }
+
   // Bao cao AI cho chinh hoc sinh dang dang nhap.
   async getMyReport(user: AuthenticatedUser): Promise<StudentStepResult[]> {
+    // correct: { not: null } -- loai bo cau tu_luan dang cho giao vien duyet
+    // khoi lich su gui cho model KT, tranh tinh nham thanh "sai".
     const attempts = await this.prisma.diagnosticAttempt.findMany({
-      where: { userId: user.sub },
+      where: { userId: user.sub, correct: { not: null } },
       orderBy: { createdAt: 'asc' },
       select: { skillCode: true, correct: true },
     });
@@ -302,7 +418,7 @@ export class DiagnosticService {
 
     const interactions: InteractionTuple[] = attempts.map((a) => [
       a.skillCode,
-      a.correct ? 1 : 0,
+      a.correct === true ? 1 : 0,
     ]);
     return this.knowledgeTracingService.predictStudent(interactions);
   }
@@ -439,5 +555,91 @@ export class DiagnosticService {
       failed: errors.length,
       errors: errors.map((e) => `Dòng ${e.row}: ${e.reason}`),
     };
+  }
+
+  // Danh sach cau tu_luan CHUA duyet cua hoc sinh trong 1 lop -- chi giao
+  // vien cua lop do. Sap xep theo THOI GIAN NOP BAI (cu nhat truoc), KHONG
+  // theo similarityScore -- tranh tao an tuong ngam rang thu tu co y nghia
+  // uu tien nao (xem PhobertSimilarityService).
+  async getPendingReview(
+    classId: string,
+    user: AuthenticatedUser,
+  ): Promise<PendingReviewItem[]> {
+    await this.classesService.assertTeacherOf(classId, user);
+
+    const members = await this.prisma.classMember.findMany({
+      where: { classId, role: 'student' },
+      select: { userId: true },
+    });
+    if (members.length === 0) return [];
+
+    const attempts = await this.prisma.diagnosticAttempt.findMany({
+      where: {
+        userId: { in: members.map((m) => m.userId) },
+        needsTeacherReview: true,
+      },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        answer: true,
+        similarityScore: true,
+        createdAt: true,
+        user: { select: { username: true } },
+        exercise: { select: { question: true, dapAnMau: true } },
+      },
+    });
+
+    return attempts.map((a) => ({
+      attemptId: a.id,
+      studentUsername: a.user.username,
+      question: a.exercise.question,
+      dapAnMau: a.exercise.dapAnMau ?? '',
+      cauTraLoi: a.answer,
+      similarityScore: a.similarityScore,
+      createdAt: a.createdAt,
+    }));
+  }
+
+  // Giao vien duyet 1 cau tu_luan -- dong bo correct theo dung ket luan cua
+  // giao vien (KHONG lien quan similarityScore), tat needsTeacherReview.
+  async reviewAttempt(
+    attemptId: string,
+    correct: boolean,
+    user: AuthenticatedUser,
+  ): Promise<void> {
+    const attempt = await this.prisma.diagnosticAttempt.findUnique({
+      where: { id: attemptId },
+      select: { id: true, userId: true },
+    });
+    if (!attempt) {
+      throw apiError(
+        'ATTEMPT_NOT_FOUND',
+        'Lượt làm bài không tồn tại.',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const membership = await this.prisma.classMember.findFirst({
+      where: { userId: attempt.userId, role: 'student', class: { teacherId: user.sub } },
+      select: { classId: true },
+    });
+    if (user.role !== 'admin' && !membership) {
+      throw apiError(
+        'FORBIDDEN',
+        'Chỉ giáo viên của lớp học sinh này mới có thể duyệt.',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    await this.prisma.diagnosticAttempt.update({
+      where: { id: attemptId },
+      data: {
+        teacherReviewedCorrect: correct,
+        correct,
+        needsTeacherReview: false,
+        reviewedAt: new Date(),
+        reviewedBy: user.sub,
+      },
+    });
   }
 }

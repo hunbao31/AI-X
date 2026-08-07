@@ -12,9 +12,9 @@ const beVietnamPro = Be_Vietnam_Pro({
 });
 
 export const metadata = {
-  title: 'EduAI — Nền tảng học tập AI',
+  title: 'AI-X — Học toán như chơi game',
   description:
-    'Nền tảng học tập tất cả trong một, ứng dụng AI: quản lý lớp học, trắc nghiệm, theo dõi mức độ thành thạo và luyện tập game hoá.',
+    'Quản lý lớp, ra đề trắc nghiệm, xem học sinh học tới đâu. Giáo viên đỡ mất công soạn bài, học sinh học đỡ chán.',
 };
 
 // Applies the saved theme before first paint so light-mode users don't get

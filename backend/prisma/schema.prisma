@@ -23,6 +23,7 @@ model User {
   createdSets       ExerciseSet[]
   diagnosticExercises DiagnosticExercise[]
   diagnosticAttempts  DiagnosticAttempt[]
+  reviewedDiagnosticAttempts DiagnosticAttempt[] @relation("DiagnosticAttemptReviewer")
   favoriteQuestions FavoriteQuestion[]
   forumAnswers      ForumAnswer[]
   forumUpvotes      ForumAnswerUpvote[]
@@ -83,6 +84,11 @@ model Exercise {
   createdAt   DateTime           @default(now())
   topicId     String?
   tags        String[]           @default([])
+  // Chi ap dung khi topicId la null (cau hoi tu do, khong gan lop) -- cau
+  // hoi gan voi 1 topicId da rieng tu cho lop do roi (xem
+  // ExercisesService.isVisible), khong dung isPublic. Default true de giu
+  // nguyen hanh vi cua cac dong da co truoc migration nay.
+  isPublic    Boolean            @default(true)
   creator     User               @relation(fields: [createdBy], references: [id])
   topicRef    Topic?             @relation(fields: [topicId], references: [id])
   setItems    ExerciseSetItem[]
@@ -98,11 +104,17 @@ model DiagnosticExercise {
   skillCode  String
   difficulty DiagnosticDifficulty
   question   String
+  answerType DiagnosticAnswerType @default(mcq)
   // Trac nghiem A/B/C/D -- toi thieu 2 lua chon. answer luu dung NOI DUNG
   // lua chon dung (khop quy uoc Exercise.answer/options da co san), khong
-  // luu chi so/chu cai.
-  options    Json
-  answer     String
+  // luu chi so/chu cai. Ca 2 bat buoc o tang service khi answerType=mcq,
+  // bo trong khi tu_luan (dapAnMau dam nhan vai tro do thay).
+  options    Json?
+  answer     String?
+  // Chi dung khi answerType=tu_luan -- cau tra loi mau giao vien nhap, dung
+  // de so sanh do tuong dong (xem KnowledgeTracingService/similarity
+  // microservice o Buoc 2).
+  dapAnMau   String?
   createdBy  String
   createdAt  DateTime             @default(now())
   creator    User                 @relation(fields: [createdBy], references: [id])
@@ -111,23 +123,41 @@ model DiagnosticExercise {
   @@index([skillCode])
 }
 
+enum DiagnosticAnswerType {
+  mcq
+  tu_luan
+}
+
 // 1 lượt học sinh trả lời 1 DiagnosticExercise. Không gắn classId — chương
 // trình SGK dùng chung cho mọi lớp, nên lịch sử làm bài là toàn cục theo
 // học sinh; thứ tự createdAt chính là chuỗi tương tác đưa vào model KT
-// (interactions: [skillCode, correct][]) khi tính bao_cao/du_doan.
+// (interactions: [skillCode, correct][]) khi tính bao_cao/du_doan — CHI
+// LAY CAC DONG DA CO KET QUA CUOI CUNG (correct != null), xem
+// DiagnosticService.getMyReport/getClassReport/getClassStudentReports.
 model DiagnosticAttempt {
-  id                   String             @id @default(uuid())
-  userId               String
-  diagnosticExerciseId String
-  skillCode            String
-  answer               String
-  correct              Boolean
-  createdAt            DateTime           @default(now())
-  user                 User               @relation(fields: [userId], references: [id])
-  exercise             DiagnosticExercise @relation(fields: [diagnosticExerciseId], references: [id], onDelete: Cascade)
+  id                     String             @id @default(uuid())
+  userId                 String
+  diagnosticExerciseId   String
+  skillCode              String
+  answer                 String
+  // null = tu_luan dang cho giao vien duyet (chua co ket qua cuoi cung).
+  // mcq luon co gia tri ngay (true/false), khong bao gio null.
+  correct                Boolean?
+  // Chi co khi answerType=tu_luan -- diem tuong dong PhoBERT, CHI de tham
+  // khao cho giao vien, KHONG dung truc tiep de tinh diem_vung.
+  similarityScore        Float?
+  needsTeacherReview     Boolean            @default(false)
+  teacherReviewedCorrect Boolean?
+  reviewedAt             DateTime?
+  reviewedBy             String?
+  createdAt              DateTime           @default(now())
+  user                   User               @relation(fields: [userId], references: [id])
+  reviewer               User?              @relation("DiagnosticAttemptReviewer", fields: [reviewedBy], references: [id])
+  exercise               DiagnosticExercise @relation(fields: [diagnosticExerciseId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([skillCode])
+  @@index([needsTeacherReview])
 }
 
 // Danh muc ky nang (bai tap) Toan lop 10 -- nguon du lieu DUY NHAT cho danh
@@ -266,8 +296,9 @@ model Gamification {
 
 model ForumPost {
   id                String        @id @default(uuid())
-  imageUrl          String
-  imageHash         String
+  // Optional — a post needs a description (required), image is a bonus.
+  imageUrl          String?
+  imageHash         String?
   description       String?
   authorId          String
   topicId           String?

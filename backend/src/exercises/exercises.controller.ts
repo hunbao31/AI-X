@@ -75,9 +75,12 @@ export class ExercisesController {
   }
 
   // Open to both roles — students need this to practice. Doubles as the
-  // searchable question bank for teachers.
+  // searchable question bank for teachers. Results are visibility-filtered
+  // per caller (see ExercisesService.findAll) — topic-linked exercises
+  // outside the caller's own classes are excluded, not just hidden in the UI.
   @Get()
   async findAll(
+    @Req() req: AuthenticatedRequest,
     @Query('topic') topic?: string,
     @Query('topicId') topicId?: string,
     @Query('difficulty') difficulty?: string,
@@ -85,14 +88,10 @@ export class ExercisesController {
     @Query('tag') tag?: string,
     @Query('search') search?: string,
   ) {
-    const exercises = await this.exercisesService.findAll({
-      topic,
-      topicId,
-      difficulty,
-      type,
-      tag,
-      search,
-    });
+    const exercises = await this.exercisesService.findAll(
+      { topic, topicId, difficulty, type, tag, search },
+      req.user,
+    );
     return ok(exercises, { count: exercises.length });
   }
 
@@ -115,21 +114,16 @@ export class ExercisesController {
     @Query('tag') tag?: string,
     @Query('search') search?: string,
   ) {
-    const exercises = await this.exercisesService.findAll({
-      topic,
-      topicId,
-      difficulty,
-      type,
-      tag,
-      search,
-      createdBy: req.user.sub,
-    });
+    const exercises = await this.exercisesService.findAll(
+      { topic, topicId, difficulty, type, tag, search, createdBy: req.user.sub },
+      req.user,
+    );
     return ok(exercises, { count: exercises.length });
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    const exercise = await this.exercisesService.findOne(id);
+  async findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    const exercise = await this.exercisesService.findOne(id, req.user);
     return ok(exercise);
   }
 

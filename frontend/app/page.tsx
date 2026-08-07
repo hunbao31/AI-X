@@ -11,26 +11,10 @@ import { KoalyFace } from '@/components/mascot/KoalyFace';
 import { staggerContainer, fadeSlideUp, springSmooth } from '@/lib/animations';
 
 const FEATURES = [
-  {
-    icon: '🎯',
-    title: 'Trắc nghiệm kiểu Kahoot',
-    desc: 'Bộ trắc nghiệm có tính giờ với phản hồi tức thì — tạo một bộ chỉ trong vài phút.',
-  },
-  {
-    icon: '🏆',
-    title: 'Bảng xếp hạng',
-    desc: 'Xếp hạng toàn hệ thống và theo từng lớp, cập nhật trực tiếp khi mọi người cùng chơi.',
-  },
-  {
-    icon: '💬',
-    title: 'Diễn đàn cộng đồng',
-    desc: 'Bí bài? Chụp ảnh, đăng câu hỏi và nhận trợ giúp thật từ mọi người.',
-  },
-  {
-    icon: '⚡',
-    title: 'XP & Chuỗi ngày',
-    desc: 'Nhận XP cho mỗi câu trả lời đúng, duy trì chuỗi ngày học và lên cấp.',
-  },
+  { icon: '🎯', title: 'Trắc nghiệm có tính giờ' },
+  { icon: '🏆', title: 'Bảng xếp hạng' },
+  { icon: '💬', title: 'Diễn đàn hỏi bài' },
+  { icon: '⚡', title: 'Điểm thưởng & chuỗi ngày học' },
 ];
 
 export default function HomePage() {
@@ -82,7 +66,7 @@ export default function HomePage() {
         <motion.div variants={fadeSlideUp} className="flex items-center gap-3">
           <KoalyFace expression="excited" size={64} />
           <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-3xl font-bold text-transparent">
-            EduAI
+            AI-X
           </span>
         </motion.div>
 
@@ -94,8 +78,10 @@ export default function HomePage() {
         </motion.h1>
 
         <motion.p variants={fadeSlideUp} className="max-w-xl text-lg text-slate-300">
-          Quản lý lớp học, trắc nghiệm kiểu Kahoot, theo dõi mức độ thành
-          thạo và XP kiểu Duolingo — tất cả trong một nền tảng.
+          Hành trình học tập đầy điểm thưởng.
+          <br />
+          Không cần đi đâu xa, chỉ một app là đủ. Trọn bộ tính năng tiện lợi
+          cho cả học sinh và giáo viên.
         </motion.p>
 
         <motion.div
@@ -130,7 +116,6 @@ export default function HomePage() {
           >
             <p className="text-3xl">{f.icon}</p>
             <h3 className="mt-3 font-semibold text-white">{f.title}</h3>
-            <p className="mt-2 text-sm text-slate-400">{f.desc}</p>
           </motion.div>
         ))}
       </motion.section>

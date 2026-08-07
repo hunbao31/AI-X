@@ -19,6 +19,7 @@ import {
   ImportDiagnosticExercisesDto,
 } from './dto/create-diagnostic-exercise.dto';
 import { SubmitDiagnosticAnswerDto } from './dto/submit-diagnostic-answer.dto';
+import { ReviewAttemptDto } from './dto/review-attempt.dto';
 import { apiError, ok } from '../common/api-envelope';
 
 @Controller('api/v1/diagnostic')
@@ -107,10 +108,54 @@ export class DiagnosticController {
     return ok(topics, { count: topics.length });
   }
 
+  // Bao cao AI theo TUNG hoc sinh trong lop -- chi giao vien cua lop do.
+  @Get('classes/:classId/students-report')
+  @UseGuards(RolesGuard)
+  @Roles('teacher')
+  async getClassStudentReports(
+    @Param('classId') classId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const reports = await this.diagnosticService.getClassStudentReports(classId, req.user);
+    return ok(reports, { count: reports.length });
+  }
+
   // Bao cao AI cho chinh hoc sinh dang dang nhap.
   @Get('me/report')
   async getMyReport(@Req() req: AuthenticatedRequest) {
     const steps = await this.diagnosticService.getMyReport(req.user);
     return ok(steps, { count: steps.length });
+  }
+
+  // Danh sach cau tu_luan cho duyet cua 1 lop -- chi giao vien cua lop do.
+  @Get('classes/:classId/pending-review')
+  @UseGuards(RolesGuard)
+  @Roles('teacher')
+  async getPendingReview(
+    @Param('classId') classId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const items = await this.diagnosticService.getPendingReview(classId, req.user);
+    return ok(items, { count: items.length });
+  }
+
+  // Giao vien duyet 1 cau tu_luan.
+  @Post('attempts/:attemptId/review')
+  @UseGuards(RolesGuard)
+  @Roles('teacher')
+  async reviewAttempt(
+    @Param('attemptId') attemptId: string,
+    @Body() dto: ReviewAttemptDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    if (typeof dto?.correct !== 'boolean') {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'correct (boolean) là bắt buộc.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+    await this.diagnosticService.reviewAttempt(attemptId, dto.correct, req.user);
+    return ok({ success: true });
   }
 }

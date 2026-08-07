@@ -98,6 +98,30 @@ function validateCandidate(candidate: ExerciseCandidate): void {
 export class ExercisesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // An exercise linked to a class Topic (topicId set) is private to that
+  // class — visible to its creator, an admin, or a member of the topic's
+  // class. Topic-less exercises stay in the shared practice pool (unchanged
+  // behavior). null return = admin, meaning "skip the check entirely."
+  private async getAllowedTopicIds(user: AuthenticatedUser): Promise<Set<string> | null> {
+    if (user.role === 'admin') return null;
+    const topics = await this.prisma.topic.findMany({
+      where: { class: { members: { some: { userId: user.sub } } } },
+      select: { id: true },
+    });
+    return new Set(topics.map((t) => t.id));
+  }
+
+  private isVisible(
+    exercise: { topicId: string | null; createdBy: string; isPublic: boolean },
+    user: AuthenticatedUser,
+    allowedTopicIds: Set<string> | null,
+  ): boolean {
+    if (allowedTopicIds === null) return true; // admin
+    if (exercise.createdBy === user.sub) return true;
+    if (exercise.topicId === null) return exercise.isPublic; // shared pool, gated by the toggle
+    return allowedTopicIds.has(exercise.topicId);
+  }
+
   // When an exercise is linked to a class Topic, only that class's teacher
   // (or an admin) may attach it, and the free-text label mirrors Topic.name.
   private async resolveTopicLink(
@@ -151,6 +175,9 @@ export class ExercisesService {
         tags: normalizeTags(dto?.tags),
         topic: candidate.topic,
         topicId,
+        // Meaningless once topicId is set (already private to that class),
+        // but stored as given either way — simplest to reason about.
+        isPublic: dto?.isPublic ?? false,
         createdBy: user.sub,
       },
     });
@@ -284,17 +311,22 @@ export class ExercisesService {
 
   // Random question picker for quick-start and auto-generated quizzes.
   // masteryScore biases difficulty: strong students get harder questions.
-  async pickRandom(options: {
-    topic?: string;
-    count: number;
-    masteryScore?: number;
-  }) {
+  async pickRandom(
+    options: {
+      topic?: string;
+      count: number;
+      masteryScore?: number;
+    },
+    user: AuthenticatedUser,
+  ) {
     const { topic, count, masteryScore } = options;
 
-    const candidates = await this.prisma.exercise.findMany({
+    const allowedTopicIds = await this.getAllowedTopicIds(user);
+    const rawCandidates = await this.prisma.exercise.findMany({
       where: topic ? { topic } : undefined,
-      select: { id: true, difficulty: true },
+      select: { id: true, difficulty: true, topicId: true, createdBy: true, isPublic: true },
     });
+    const candidates = rawCandidates.filter((c) => this.isVisible(c, user, allowedTopicIds));
     if (candidates.length === 0) return [];
 
     // Preference order by performance: high mastery → hard first, low → easy
@@ -383,13 +415,16 @@ export class ExercisesService {
         tags: dto.tags !== undefined ? normalizeTags(dto.tags) : undefined,
         topic: candidate.topic,
         topicId,
+        isPublic: dto.isPublic ?? existing.isPublic,
       },
     });
   }
 
   // Question bank: filterable by topic/topicId/difficulty/type/tag and
-  // free-text search over the question.
-  async findAll(filters: ExerciseFilters = {}) {
+  // free-text search over the question. Results are filtered to what `user`
+  // is allowed to see — topic-linked exercises outside the caller's own
+  // classes never reach the response (see isVisible/getAllowedTopicIds).
+  async findAll(filters: ExerciseFilters = {}, user: AuthenticatedUser) {
     try {
       const clauses: Prisma.ExerciseWhereInput[] = [];
       if (filters.createdBy) clauses.push({ createdBy: filters.createdBy });
@@ -413,10 +448,14 @@ export class ExercisesService {
         });
       }
 
-      return await this.prisma.exercise.findMany({
-        where: clauses.length > 0 ? { AND: clauses } : undefined,
-        orderBy: { createdAt: 'desc' },
-      });
+      const [rows, allowedTopicIds] = await Promise.all([
+        this.prisma.exercise.findMany({
+          where: clauses.length > 0 ? { AND: clauses } : undefined,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.getAllowedTopicIds(user),
+      ]);
+      return rows.filter((r) => this.isVisible(r, user, allowedTopicIds));
     } catch {
       // Never let a transient DB hiccup surface as a broken response —
       // an empty list is always a valid answer for "no exercises yet".
@@ -424,8 +463,16 @@ export class ExercisesService {
     }
   }
 
-  findOne(id: string) {
-    return this.prisma.exercise.findUnique({ where: { id } });
+  async findOne(id: string, user: AuthenticatedUser) {
+    const exercise = await this.prisma.exercise.findUnique({ where: { id } });
+    if (!exercise) return null;
+    const allowedTopicIds = await this.getAllowedTopicIds(user);
+    if (!this.isVisible(exercise, user, allowedTopicIds)) {
+      // Same as "not found" from the caller's perspective — don't confirm
+      // that a private exercise exists to someone who can't see it.
+      return null;
+    }
+    return exercise;
   }
 
   // Backs the teacher dashboard stats cards. Attempt.exerciseId has no

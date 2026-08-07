@@ -189,14 +189,16 @@ export function ForumPostDetail({ postId, basePath }: ForumPostDetailProps) {
 
       <motion.div variants={fadeSlideUp} initial="hidden" animate="show">
         <Card className="space-y-4">
-          <div className="overflow-hidden rounded-xl border border-white/10 bg-black/20">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={resolveImageUrl(post.imageUrl)}
-              alt="Câu hỏi"
-              className="max-h-[480px] w-full object-contain"
-            />
-          </div>
+          {post.imageUrl && (
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-black/20">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={resolveImageUrl(post.imageUrl)}
+                alt="Câu hỏi"
+                className="max-h-[480px] w-full object-contain"
+              />
+            </div>
+          )}
 
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">

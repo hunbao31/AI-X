@@ -61,7 +61,7 @@ export class AttemptsController {
     // Exercises are DB-backed now (teacher-created) instead of the static
     // curriculum array — CurriculumModule/`/curriculum` still exist for the
     // old grade/topic browsing page, but attempts no longer depend on them.
-    const exercise = await this.exercisesService.findOne(body.exerciseId);
+    const exercise = await this.exercisesService.findOne(body.exerciseId, req.user);
 
     if (!exercise || exercise.topic !== body.topic) {
       throw new HttpException(

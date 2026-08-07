@@ -13,7 +13,7 @@ import {
   ExercisePayload,
 } from '@/components/exercise/ExerciseForm';
 import { ImportQuestions } from '@/components/exercise/ImportQuestions';
-import type { ClassDetail, TopicInfo, SkillCatalogChuong } from '@/lib/types';
+import type { ClassDetail, TopicInfo, SkillCatalogChuong, ClassStudentReport } from '@/lib/types';
 
 function topicNameFor(chuongSgk: string, baiSgk: number, tenBai: string | null): string {
   const baiLabel = tenBai ? `Bài ${baiSgk}: ${tenBai}` : `Bài ${baiSgk}`;
@@ -74,6 +74,20 @@ export default function TeacherClassDetailPage() {
       .then(setCatalog)
       .catch(() => setCatalog([]));
   }, []);
+
+  const [studentReports, setStudentReports] = useState<ClassStudentReport[]>([]);
+  const [studentReportsLoading, setStudentReportsLoading] = useState(true);
+  const [studentReportsError, setStudentReportsError] = useState('');
+
+  useEffect(() => {
+    setStudentReportsLoading(true);
+    apiGet<ClassStudentReport[]>(`/api/v1/diagnostic/classes/${classId}/students-report`)
+      .then(setStudentReports)
+      .catch((err) =>
+        setStudentReportsError(err instanceof Error ? err.message : 'Không thể tải.'),
+      )
+      .finally(() => setStudentReportsLoading(false));
+  }, [classId]);
 
   const baiOptions = catalog.find((c) => c.chuongSgk === selectedChuong)?.bais ?? [];
 
@@ -159,6 +173,16 @@ export default function TeacherClassDetailPage() {
           Chia sẻ mã này với học sinh để họ tham gia. {detail.members.length}{' '}
           thành viên.
         </p>
+      </Card>
+
+      <Card className="flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-white">Câu tự luận chờ duyệt</h2>
+          <p className="text-xs text-slate-400">Đọc và tự đánh giá câu trả lời của học sinh.</p>
+        </div>
+        <Link href={`/teacher/classes/${classId}/review`}>
+          <Button variant="secondary">Duyệt bài</Button>
+        </Link>
       </Card>
 
       <Card className="space-y-4">
@@ -311,6 +335,45 @@ export default function TeacherClassDetailPage() {
                 <Link href={`/teacher/sets/${s.id}`}>
                   <Button variant="secondary">Chỉnh sửa</Button>
                 </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="space-y-3">
+        <h2 className="text-lg font-semibold text-white">Mức độ hiểu từng học sinh (AI)</h2>
+        {studentReportsLoading ? (
+          <p className="text-sm text-slate-400">Đang phân tích…</p>
+        ) : studentReportsError ? (
+          <p className="text-sm text-red-400">{studentReportsError}</p>
+        ) : studentReports.length === 0 ? (
+          <p className="text-sm text-slate-400">Lớp chưa có học sinh nào.</p>
+        ) : (
+          <div className="space-y-2">
+            {studentReports.map((r) => (
+              <div
+                key={r.userId}
+                className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-2"
+              >
+                <span className="truncate text-sm text-slate-200">{r.username}</span>
+                {r.percent === null ? (
+                  <span className="shrink-0 text-xs text-slate-500">
+                    Chưa có dữ liệu chẩn đoán
+                  </span>
+                ) : (
+                  <span
+                    className={`shrink-0 text-sm font-bold ${
+                      r.percent < 50
+                        ? 'text-red-300'
+                        : r.percent < 75
+                          ? 'text-yellow-300'
+                          : 'text-green-300'
+                    }`}
+                  >
+                    {r.percent}% hiểu bài
+                  </span>
+                )}
               </div>
             ))}
           </div>
