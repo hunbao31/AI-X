@@ -32,7 +32,7 @@ export default function RegisterPage() {
       });
       router.push('/login');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed.');
+      setError(err instanceof Error ? err.message : 'Đăng ký thất bại.');
     } finally {
       setLoading(false);
     }
@@ -40,14 +40,14 @@ export default function RegisterPage() {
 
   return (
     <Card className="w-full max-w-sm animate-fade-in">
-      <h1 className="mb-6 text-2xl font-bold text-white">Create your account</h1>
+      <h1 className="mb-6 text-2xl font-bold text-white">Tạo tài khoản của bạn</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label
             htmlFor="username"
             className="mb-1.5 block text-sm font-medium text-slate-300"
           >
-            Username
+            Tên đăng nhập
           </label>
           <input
             id="username"
@@ -59,7 +59,7 @@ export default function RegisterPage() {
             minLength={3}
             maxLength={32}
             pattern="[a-zA-Z0-9._-]+"
-            title="Letters, digits, dots, underscores, and hyphens only"
+            title="Chỉ gồm chữ cái, chữ số, dấu chấm, gạch dưới và gạch ngang"
             className="input-base"
           />
         </div>
@@ -68,7 +68,7 @@ export default function RegisterPage() {
             htmlFor="email"
             className="mb-1.5 block text-sm font-medium text-slate-300"
           >
-            Email <span className="text-slate-500">(optional)</span>
+            Email <span className="text-slate-500">(không bắt buộc)</span>
           </label>
           <input
             id="email"
@@ -84,7 +84,7 @@ export default function RegisterPage() {
             htmlFor="password"
             className="mb-1.5 block text-sm font-medium text-slate-300"
           >
-            Password
+            Mật khẩu
           </label>
           <input
             id="password"
@@ -100,7 +100,7 @@ export default function RegisterPage() {
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-300">
-            I am a…
+            Tôi là…
           </label>
           <div className="grid grid-cols-2 gap-3">
             {(['student', 'teacher'] as SignupRole[]).map((r) => (
@@ -108,13 +108,13 @@ export default function RegisterPage() {
                 key={r}
                 type="button"
                 onClick={() => setRole(r)}
-                className={`rounded-xl border px-4 py-2.5 text-sm font-medium capitalize transition-all duration-200 ${
+                className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
                   role === r
                     ? 'scale-105 border-indigo-400/60 bg-indigo-500/20 text-white shadow-lg shadow-indigo-500/20'
                     : 'border-white/15 bg-white/5 text-slate-300 hover:bg-white/10'
                 }`}
               >
-                {r}
+                {r === 'student' ? 'Học sinh' : 'Giáo viên'}
               </button>
             ))}
           </div>
@@ -122,13 +122,13 @@ export default function RegisterPage() {
 
         {error && <p className="text-sm text-red-400">{error}</p>}
         <Button type="submit" disabled={loading} className="w-full">
-          {loading ? 'Creating account…' : 'Register'}
+          {loading ? 'Đang tạo tài khoản…' : 'Đăng ký'}
         </Button>
       </form>
       <p className="mt-6 text-center text-sm text-slate-400">
-        Already have an account?{' '}
+        Đã có tài khoản?{' '}
         <a href="/login" className="font-medium text-indigo-300 hover:text-indigo-200">
-          Log in
+          Đăng nhập
         </a>
       </p>
     </Card>

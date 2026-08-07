@@ -13,14 +13,14 @@ export class AuthController {
     if (!body?.username?.trim() || !body?.password) {
       throw apiError(
         'VALIDATION_ERROR',
-        'Username and password are required.',
+        'Tên đăng nhập và mật khẩu là bắt buộc.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
     if (body.password.length < 6) {
       throw apiError(
         'VALIDATION_ERROR',
-        'Password must be at least 6 characters.',
+        'Mật khẩu phải có ít nhất 6 ký tự.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -44,7 +44,7 @@ export class AuthController {
     if (!identifier?.trim() || !body?.password) {
       throw apiError(
         'VALIDATION_ERROR',
-        'Username (or email) and password are required.',
+        'Tên đăng nhập (hoặc email) và mật khẩu là bắt buộc.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }

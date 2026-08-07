@@ -29,6 +29,11 @@ interface ExerciseFormProps {
   submitting: boolean;
   error: string;
   onSubmit: (payload: ExercisePayload) => void;
+  // When both are set, the class/topic picker is skipped entirely and every
+  // exercise submitted links straight to this topic — used to embed the form
+  // inline under an already-selected class topic (see teacher/classes/[id]).
+  lockedClassId?: string;
+  lockedTopicId?: string;
 }
 
 const EMPTY_OPTIONS = ['', '', '', ''];
@@ -43,7 +48,11 @@ export function ExerciseForm({
   submitting,
   error,
   onSubmit,
+  lockedClassId,
+  lockedTopicId,
 }: ExerciseFormProps) {
+  const isLocked = Boolean(lockedClassId && lockedTopicId);
+
   const [question, setQuestion] = useState(initial?.question ?? '');
   const [type, setType] = useState<ExerciseType>(initial?.type ?? 'mcq');
   const [difficulty, setDifficulty] = useState<Difficulty>(
@@ -58,27 +67,28 @@ export function ExerciseForm({
   });
   const [answer, setAnswer] = useState(initial?.answer ?? '');
 
-  // Optional class-topic link.
+  // Optional class-topic link — unused entirely when isLocked.
   const [classes, setClasses] = useState<ClassSummary[]>([]);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [topics, setTopics] = useState<TopicInfo[]>([]);
   const [selectedTopicId, setSelectedTopicId] = useState(initial?.topicId ?? '');
 
   useEffect(() => {
+    if (isLocked) return;
     apiGet<ClassSummary[]>('/api/v1/classes')
       .then(setClasses)
       .catch(() => setClasses([]));
-  }, []);
+  }, [isLocked]);
 
   useEffect(() => {
-    if (!selectedClassId) {
+    if (isLocked || !selectedClassId) {
       setTopics([]);
       return;
     }
     apiGet<TopicInfo[]>(`/api/v1/topics?classId=${selectedClassId}`)
       .then(setTopics)
       .catch(() => setTopics([]));
-  }, [selectedClassId]);
+  }, [isLocked, selectedClassId]);
 
   function updateOption(i: number, value: string) {
     setOptions((prev) => prev.map((o, idx) => (idx === i ? value : o)));
@@ -86,6 +96,18 @@ export function ExerciseForm({
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (isLocked) {
+      onSubmit({
+        question,
+        type,
+        difficulty,
+        topicId: lockedTopicId,
+        answer,
+        options:
+          type === 'mcq' ? options.filter((o) => o.trim() !== '') : undefined,
+      });
+      return;
+    }
     onSubmit({
       question,
       type,
@@ -103,9 +125,9 @@ export function ExerciseForm({
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
         <label className="mb-1.5 block text-sm font-medium text-slate-300">
-          Question{' '}
+          Câu hỏi{' '}
           <span className="text-slate-500">
-            (LaTeX supported: $x^2$ inline, $$\frac{'{a}{b}'}$$ block)
+            (hỗ trợ LaTeX: $x^2$ dạng dòng, $$\frac{'{a}{b}'}$$ dạng khối)
           </span>
         </label>
         <textarea
@@ -118,7 +140,7 @@ export function ExerciseForm({
         {question.includes('$') && (
           <div className="mt-2 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">
             <span className="mr-2 text-xs uppercase tracking-wide text-slate-500">
-              Preview
+              Xem trước
             </span>
             <MathText text={question} />
           </div>
@@ -127,90 +149,92 @@ export function ExerciseForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-300">Type</label>
+          <label className="mb-1.5 block text-sm font-medium text-slate-300">Loại</label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value as ExerciseType)}
             className="input-base"
           >
-            <option value="mcq">Multiple Choice</option>
-            <option value="text">Free Text</option>
+            <option value="mcq">Trắc nghiệm</option>
+            <option value="text">Tự luận</option>
           </select>
         </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-300">
-            Difficulty
+            Độ khó
           </label>
           <select
             value={difficulty}
             onChange={(e) => setDifficulty(e.target.value as Difficulty)}
             className="input-base"
           >
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
+            <option value="easy">Dễ</option>
+            <option value="medium">Trung bình</option>
+            <option value="hard">Khó</option>
           </select>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-300">
-            Class <span className="text-slate-500">(optional)</span>
-          </label>
-          <select
-            value={selectedClassId}
-            onChange={(e) => {
-              setSelectedClassId(e.target.value);
-              setSelectedTopicId('');
-            }}
-            className="input-base"
-          >
-            <option value="">No class</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
+      {!isLocked && (
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-300">
+              Lớp <span className="text-slate-500">(tùy chọn)</span>
+            </label>
+            <select
+              value={selectedClassId}
+              onChange={(e) => {
+                setSelectedClassId(e.target.value);
+                setSelectedTopicId('');
+              }}
+              className="input-base"
+            >
+              <option value="">Không có lớp</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-300">
+              Chủ đề của lớp
+            </label>
+            <select
+              value={selectedTopicId}
+              onChange={(e) => setSelectedTopicId(e.target.value)}
+              disabled={!selectedClassId || topics.length === 0}
+              className="input-base"
+            >
+              <option value="">
+                {selectedClassId
+                  ? topics.length === 0
+                    ? 'Lớp chưa có chủ đề nào'
+                    : 'Chọn một chủ đề'
+                  : 'Chọn lớp trước'}
               </option>
-            ))}
-          </select>
+              {topics.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-300">
-            Class topic
-          </label>
-          <select
-            value={selectedTopicId}
-            onChange={(e) => setSelectedTopicId(e.target.value)}
-            disabled={!selectedClassId || topics.length === 0}
-            className="input-base"
-          >
-            <option value="">
-              {selectedClassId
-                ? topics.length === 0
-                  ? 'No topics in class'
-                  : 'Select a topic'
-                : 'Pick a class first'}
-            </option>
-            {topics.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      )}
 
-      {!selectedTopicId && (
+      {!isLocked && !selectedTopicId && (
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-300">
-            Topic label
+            Nhãn chủ đề
           </label>
           <input
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             required={!selectedTopicId}
-            placeholder="e.g. algebra"
+            placeholder="ví dụ: đại số"
             className="input-base"
           />
         </div>
@@ -218,27 +242,27 @@ export function ExerciseForm({
 
       {type === 'mcq' ? (
         <div className="space-y-3">
-          <label className="block text-sm font-medium text-slate-300">Options</label>
+          <label className="block text-sm font-medium text-slate-300">Các lựa chọn</label>
           {options.map((opt, i) => (
             <input
               key={i}
               type="text"
               value={opt}
               onChange={(e) => updateOption(i, e.target.value)}
-              placeholder={`Option ${i + 1}`}
+              placeholder={`Lựa chọn ${i + 1}`}
               className="input-base"
             />
           ))}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-300">
-              Correct answer
+              Đáp án đúng
             </label>
             <input
               type="text"
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               required
-              placeholder="Must match one of the options above"
+              placeholder="Phải khớp với một trong các lựa chọn ở trên"
               className="input-base"
             />
           </div>
@@ -246,7 +270,7 @@ export function ExerciseForm({
       ) : (
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-300">
-            Answer
+            Đáp án
           </label>
           <input
             type="text"

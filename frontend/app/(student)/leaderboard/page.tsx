@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { XpLeaderboard } from '@/components/leaderboard/XpLeaderboard';
 import { ConfettiBurst } from '@/components/ui/ConfettiBurst';
 import { useMascot } from '@/components/mascot/MascotProvider';
-import { getStoredUser } from '@/lib/session';
+import { useUser } from '@/lib/user-context';
 import { useSounds } from '@/lib/sounds';
 import { springSmooth, springBouncy } from '@/lib/animations';
 import type { ClassSummary, XpLeaderboardEntry } from '@/lib/types';
@@ -18,7 +18,12 @@ const POLL_MS = 30_000;
 export default function LeaderboardPage() {
   const { playClick, playRankUp } = useSounds();
   const mascot = useMascot();
-  const me = getStoredUser();
+  // useUser() (not the one-shot getStoredUser()) gives `me` a stable
+  // reference across renders. getStoredUser() re-parses localStorage on
+  // every call, so a new object every render fed into `load`'s deps below
+  // would retrigger the polling effect continuously instead of every 30s —
+  // a busy-loop of fetches, not a subtle cosmetic bug.
+  const { user: me } = useUser();
 
   const [classes, setClasses] = useState<ClassSummary[]>([]);
   // 'global' or a class id.
@@ -80,7 +85,7 @@ export default function LeaderboardPage() {
               } else {
                 mascot.react(
                   'rankUp',
-                  `↑ +${climbed} rank${climbed === 1 ? '' : 's'}!`,
+                  `↑ +${climbed} hạng!`,
                 );
               }
             }
@@ -88,7 +93,7 @@ export default function LeaderboardPage() {
           }
         })
         .catch((err) =>
-          setError(err instanceof Error ? err.message : 'Failed to load leaderboard.'),
+          setError(err instanceof Error ? err.message : 'Không thể tải bảng xếp hạng.'),
         )
         .finally(() => {
           if (!silent) setLoading(false);
@@ -105,7 +110,7 @@ export default function LeaderboardPage() {
   }, [scope, load]);
 
   const tabs = [
-    { id: 'global', label: '🌍 Global' },
+    { id: 'global', label: '🌍 Toàn cầu' },
     ...classes.map((c) => ({ id: c.id, label: c.name })),
   ];
 
@@ -114,9 +119,9 @@ export default function LeaderboardPage() {
       {burst && <ConfettiBurst onDone={() => setBurst(false)} />}
 
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Leaderboard</h1>
+        <h1 className="text-2xl font-bold text-white">Bảng xếp hạng</h1>
         <Button variant="ghost" onClick={() => load(scope, { silent: true })}>
-          ↻ Refresh
+          ↻ Làm mới
         </Button>
       </div>
 
@@ -153,14 +158,14 @@ export default function LeaderboardPage() {
               exit={{ opacity: 0, y: -28, transition: { duration: 0.4 } }}
               className="pointer-events-none absolute -top-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-green-400/50 bg-green-500/20 px-4 py-1.5 text-sm font-bold text-green-300 shadow-lg shadow-green-500/20 backdrop-blur-xl"
             >
-              ↑ +{rankDelta} rank{rankDelta === 1 ? '' : 's'}
+              ↑ +{rankDelta} hạng
             </motion.div>
           )}
         </AnimatePresence>
 
         <Card>
           {loading ? (
-            <p className="text-slate-400">Loading leaderboard…</p>
+            <p className="text-slate-400">Đang tải bảng xếp hạng…</p>
           ) : error ? (
             <p className="text-red-400">{error}</p>
           ) : (

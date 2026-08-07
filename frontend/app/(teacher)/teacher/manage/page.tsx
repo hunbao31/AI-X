@@ -19,6 +19,13 @@ interface Exercise {
   topic: string;
 }
 
+// Display-only label for the raw `type` enum rendered directly in JSX —
+// the value itself (used elsewhere) stays untouched.
+const TYPE_LABELS: Record<string, string> = {
+  mcq: 'Trắc nghiệm',
+  text: 'Tự luận',
+};
+
 function TeacherManageInner() {
   // Import is the primary creation path — ?import=1 (e.g. from the dashboard
   // quick link) opens the panel immediately.
@@ -30,10 +37,12 @@ function TeacherManageInner() {
 
   function load() {
     setLoading(true);
-    apiGet<Exercise[]>('/api/v1/exercises')
+    // Personal bank — only what this teacher authored, not the old
+    // "everyone's exercises" shared pool.
+    apiGet<Exercise[]>('/api/v1/exercises/mine')
       .then(setExercises)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Failed to load exercises.'),
+        setError(err instanceof Error ? err.message : 'Không thể tải danh sách bài tập.'),
       )
       .finally(() => setLoading(false));
   }
@@ -47,20 +56,26 @@ function TeacherManageInner() {
       await apiDelete(`/api/v1/exercises/${id}`);
       setExercises((prev) => prev.filter((e) => e.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete exercise.');
+      setError(err instanceof Error ? err.message : 'Không thể xóa bài tập.');
     }
   }
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-white">Manage Exercises</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-white">Ngân hàng câu hỏi của tôi</h1>
+          <p className="mt-1 text-sm text-slate-400">
+            Chỉ những câu hỏi bạn đã soạn — riêng tư cho đến khi bạn xuất
+            bản một bộ đề lên kho đề.
+          </p>
+        </div>
         <div className="flex gap-2">
           <Button onClick={() => setShowImport((v) => !v)}>
-            {showImport ? 'Hide import' : '📥 Import Questions'}
+            {showImport ? 'Ẩn nhập câu hỏi' : '📥 Nhập câu hỏi'}
           </Button>
           <Link href="/teacher/create">
-            <Button variant="secondary">+ New Exercise</Button>
+            <Button variant="secondary">+ Bài tập mới</Button>
           </Link>
         </div>
       </div>
@@ -68,10 +83,10 @@ function TeacherManageInner() {
       {showImport && (
         <Card className="space-y-4 border-indigo-400/30">
           <div>
-            <h2 className="text-lg font-semibold text-white">Import from CSV</h2>
+            <h2 className="text-lg font-semibold text-white">Nhập từ CSV hoặc Excel</h2>
             <p className="mt-1 text-sm text-slate-400">
-              The fastest way to build your question bank — one row per
-              question, LaTeX supported.
+              Cách nhanh nhất để xây dựng ngân hàng câu hỏi — mỗi dòng một
+              câu hỏi, hỗ trợ LaTeX.
             </p>
           </div>
           <ImportQuestions onImported={load} />
@@ -81,10 +96,14 @@ function TeacherManageInner() {
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {loading ? (
-        <p className="text-slate-400">Loading…</p>
+        <p className="text-slate-400">Đang tải…</p>
       ) : exercises.length === 0 ? (
         <Card>
-          <p className="text-slate-300">No exercises yet.</p>
+          <p className="text-slate-300">
+            Ngân hàng câu hỏi của bạn đang trống — các câu hỏi bạn soạn khi
+            xây dựng bộ đề sẽ tự động xuất hiện ở đây, hoặc nhập một tệp CSV
+            ở trên.
+          </p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -98,17 +117,17 @@ function TeacherManageInner() {
                   <MathText text={ex.question} />
                 </p>
                 <div className="mt-2 flex items-center gap-2">
-                  <Badge tone="indigo">{ex.type.toUpperCase()}</Badge>
+                  <Badge tone="indigo">{TYPE_LABELS[ex.type] ?? ex.type.toUpperCase()}</Badge>
                   <DifficultyBadge difficulty={ex.difficulty} />
                   <span className="text-xs capitalize text-slate-400">{ex.topic}</span>
                 </div>
               </div>
               <div className="flex shrink-0 gap-2">
                 <Link href={`/teacher/exercises/${ex.id}/edit`}>
-                  <Button variant="secondary">Edit</Button>
+                  <Button variant="secondary">Chỉnh sửa</Button>
                 </Link>
                 <Button variant="danger" onClick={() => handleDelete(ex.id)}>
-                  Delete
+                  Xóa
                 </Button>
               </div>
             </Card>
@@ -121,7 +140,7 @@ function TeacherManageInner() {
 
 export default function TeacherManagePage() {
   return (
-    <Suspense fallback={<p className="text-slate-400">Loading…</p>}>
+    <Suspense fallback={<p className="text-slate-400">Đang tải…</p>}>
       <TeacherManageInner />
     </Suspense>
   );

@@ -37,7 +37,7 @@ export class RolesGuard implements CanActivate {
           success: false,
           error: {
             code: 'FORBIDDEN',
-            message: 'You do not have permission to perform this action.',
+            message: 'Bạn không có quyền thực hiện thao tác này.',
           },
           meta: { timestamp: new Date().toISOString() },
         },

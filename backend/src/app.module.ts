@@ -14,7 +14,11 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { LeaderboardModule } from './leaderboard/leaderboard.module';
 import { FavoritesModule } from './favorites/favorites.module';
+import { ForumModule } from './forum/forum.module';
 import { CurriculumModule } from './curriculum/curriculum.module';
+import { KnowledgeTracingModule } from './knowledge-tracing/knowledge-tracing.module';
+import { DiagnosticModule } from './diagnostic/diagnostic.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -32,6 +36,10 @@ import { CurriculumModule } from './curriculum/curriculum.module';
     GamificationModule,
     LeaderboardModule,
     FavoritesModule,
+    ForumModule,
+    KnowledgeTracingModule,
+    DiagnosticModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

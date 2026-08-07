@@ -10,6 +10,19 @@ import { useClickSound } from '@/lib/useClickSound';
 import { getStoredUser } from '@/lib/session';
 import type { Theme, UserProfile } from '@/lib/types';
 
+// Display-only labels for the Theme and Role enums — comparisons/logic
+// elsewhere keep using the original English values.
+const THEME_LABEL: Record<string, string> = {
+  dark: 'Chế độ tối',
+  light: 'Chế độ sáng',
+};
+
+const ROLE_LABEL: Record<string, string> = {
+  student: 'Học sinh',
+  teacher: 'Giáo viên',
+  admin: 'Quản trị viên',
+};
+
 export function SettingsPanel() {
   const { theme, setTheme } = useTheme();
   const playClick = useClickSound();
@@ -20,7 +33,7 @@ export function SettingsPanel() {
     apiGet<UserProfile>('/api/v1/users/me')
       .then(setProfile)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Failed to load profile.'),
+        setError(err instanceof Error ? err.message : 'Không thể tải hồ sơ.'),
       );
   }, []);
 
@@ -38,13 +51,13 @@ export function SettingsPanel() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold text-white">Settings</h1>
+      <h1 className="text-2xl font-bold text-white">Cài đặt</h1>
 
       <Card className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">Appearance</h2>
+        <h2 className="text-lg font-semibold text-white">Giao diện</h2>
         <p className="text-sm text-slate-400">
-          Choose how the app looks on this device. Your choice is saved to your
-          account.
+          Chọn giao diện hiển thị ứng dụng trên thiết bị này. Lựa chọn của bạn
+          sẽ được lưu vào tài khoản.
         </p>
         <div className="grid grid-cols-2 gap-3">
           {(['dark', 'light'] as Theme[]).map((t) => (
@@ -62,13 +75,13 @@ export function SettingsPanel() {
               }`}
             >
               <p className="text-2xl">{t === 'dark' ? '🌙' : '☀️'}</p>
-              <p className="mt-2 text-sm font-semibold capitalize text-white">
-                {t} mode
+              <p className="mt-2 text-sm font-semibold text-white">
+                {THEME_LABEL[t] ?? t}
               </p>
               <p className="mt-0.5 text-xs text-slate-400">
                 {t === 'dark'
-                  ? 'Low-light friendly, high contrast accents'
-                  : 'Bright surfaces, darker text'}
+                  ? 'Phù hợp môi trường thiếu sáng, độ tương phản cao'
+                  : 'Nền sáng, chữ đậm màu'}
               </p>
             </motion.button>
           ))}
@@ -76,28 +89,36 @@ export function SettingsPanel() {
       </Card>
 
       <Card className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">Account</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">Tài khoản</h2>
+          <a
+            href={role === 'teacher' ? '/teacher/settings/profile' : '/settings/profile'}
+            className="text-sm font-medium text-indigo-300 hover:text-indigo-200"
+          >
+            Chỉnh sửa hồ sơ →
+          </a>
+        </div>
         {error && <p className="text-sm text-red-400">{error}</p>}
         <div className="space-y-3">
           <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-            <span className="text-sm text-slate-400">Username</span>
+            <span className="text-sm text-slate-400">Tên người dùng</span>
             <span className="text-sm font-medium text-white">{username}</span>
           </div>
           <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3">
             <span className="text-sm text-slate-400">Email</span>
             <span className="text-sm font-medium text-white">
-              {email ?? 'Not set'}
+              {email ?? 'Chưa thiết lập'}
             </span>
           </div>
           <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-            <span className="text-sm text-slate-400">Role</span>
-            {role ? <Badge tone="indigo">{role}</Badge> : <span>…</span>}
+            <span className="text-sm text-slate-400">Vai trò</span>
+            {role ? <Badge tone="indigo">{ROLE_LABEL[role] ?? role}</Badge> : <span>…</span>}
           </div>
           {profile && (
             <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-              <span className="text-sm text-slate-400">Member since</span>
+              <span className="text-sm text-slate-400">Thành viên từ</span>
               <span className="text-sm font-medium text-white">
-                {new Date(profile.createdAt).toLocaleDateString('en-US', {
+                {new Date(profile.createdAt).toLocaleDateString('vi-VN', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',

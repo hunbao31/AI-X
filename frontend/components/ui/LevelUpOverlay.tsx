@@ -99,13 +99,13 @@ export function LevelUpOverlay({ level, onClose }: LevelUpOverlayProps) {
           <MascotImage expression="excited" size={140} />
         </div>
         <p className="levelup-glow bg-gradient-to-r from-indigo-300 via-purple-300 to-amber-300 bg-clip-text text-6xl font-black tracking-tight text-transparent">
-          LEVEL UP!
+          LÊN CẤP!
         </p>
         <p className="mt-4 text-xl font-semibold text-white">
-          You reached <span className="text-amber-300">Level {level}</span>
+          Bạn đã đạt <span className="text-amber-300">Cấp độ {level}</span>
         </p>
         <p className="mt-6 text-xs uppercase tracking-widest text-slate-400">
-          Click anywhere to continue
+          Nhấn vào bất kỳ đâu để tiếp tục
         </p>
       </motion.div>
     </motion.div>

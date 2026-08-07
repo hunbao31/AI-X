@@ -24,11 +24,11 @@ export default function TeacherEditExercisePage() {
   useEffect(() => {
     apiGet<Exercise | null>(`/api/v1/exercises/${params.id}`)
       .then((ex) => {
-        if (!ex) setLoadError('Exercise not found.');
+        if (!ex) setLoadError('Không tìm thấy bài tập.');
         setExercise(ex);
       })
       .catch((err) =>
-        setLoadError(err instanceof Error ? err.message : 'Failed to load exercise.'),
+        setLoadError(err instanceof Error ? err.message : 'Không thể tải bài tập.'),
       )
       .finally(() => setLoading(false));
   }, [params.id]);
@@ -40,22 +40,22 @@ export default function TeacherEditExercisePage() {
       await apiPatch(`/api/v1/exercises/${params.id}`, payload);
       router.push('/teacher/manage');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update exercise.');
+      setError(err instanceof Error ? err.message : 'Không thể cập nhật bài tập.');
       setSubmitting(false);
     }
   }
 
-  if (loading) return <p className="text-slate-400">Loading exercise…</p>;
+  if (loading) return <p className="text-slate-400">Đang tải bài tập…</p>;
 
   if (loadError || !exercise) {
     return (
       <Card className="mx-auto max-w-2xl">
-        <p className="text-red-400">{loadError || 'Exercise not found.'}</p>
+        <p className="text-red-400">{loadError || 'Không tìm thấy bài tập.'}</p>
         <Link
           href="/teacher/manage"
           className="mt-4 inline-block text-sm text-indigo-300 hover:text-indigo-200"
         >
-          ← Back to exercises
+          ← Quay lại danh sách bài tập
         </Link>
       </Card>
     );
@@ -65,18 +65,18 @@ export default function TeacherEditExercisePage() {
     <div className="mx-auto max-w-2xl">
       <Card className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white">Edit Exercise</h1>
+          <h1 className="text-2xl font-bold text-white">Chỉnh sửa bài tập</h1>
           <Link
             href="/teacher/manage"
             className="text-xs font-medium uppercase tracking-wide text-slate-400 hover:text-slate-200"
           >
-            ← Back
+            ← Quay lại
           </Link>
         </div>
         <ExerciseForm
           initial={exercise}
-          submitLabel="Save changes"
-          submittingLabel="Saving…"
+          submitLabel="Lưu thay đổi"
+          submittingLabel="Đang lưu…"
           submitting={submitting}
           error={error}
           onSubmit={handleSubmit}

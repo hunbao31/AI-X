@@ -22,17 +22,17 @@ export interface CurriculumGrade {
 export const GRADES: CurriculumGrade[] = [
   {
     id: '10',
-    name: 'Grade 10',
+    name: 'Lớp 10',
     topics: [
       {
         id: 'algebra',
-        name: 'Algebra',
+        name: 'Đại số',
         exercises: [
-          { id: 'ex-1', question: 'Solve: 2x + 3 = 7', correctAnswer: '2' },
-          { id: 'ex-4', question: 'What is 5 factorial (5!)?', correctAnswer: '120' },
+          { id: 'ex-1', question: 'Giải: 2x + 3 = 7', correctAnswer: '2' },
+          { id: 'ex-4', question: '5 giai thừa (5!) bằng bao nhiêu?', correctAnswer: '120' },
           {
             id: 'ex-5',
-            question: 'Simplify: (x^2 - 1)/(x - 1)',
+            question: 'Rút gọn: (x^2 - 1)/(x - 1)',
             correctAnswer: 'x + 1',
           },
         ],
@@ -41,16 +41,16 @@ export const GRADES: CurriculumGrade[] = [
   },
   {
     id: '12',
-    name: 'Grade 12',
+    name: 'Lớp 12',
     topics: [
       {
         id: 'calculus',
-        name: 'Calculus',
+        name: 'Giải tích',
         exercises: [
-          { id: 'ex-2', question: 'Derivative of x^2?', correctAnswer: '2x' },
+          { id: 'ex-2', question: 'Đạo hàm của x^2 là gì?', correctAnswer: '2x' },
           {
             id: 'ex-3',
-            question: 'Integral of 1/x dx?',
+            question: 'Nguyên hàm của 1/x dx là gì?',
             correctAnswer: 'ln|x| + C',
           },
         ],

@@ -46,6 +46,11 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       return;
     }
 
+    if (role === 'admin') {
+      router.push('/admin');
+      return;
+    }
+
     setReady(true);
   }, [router]);
 

@@ -32,7 +32,7 @@ export class ClassesService {
     if (!name?.trim()) {
       throw apiError(
         'VALIDATION_ERROR',
-        'Class name is required.',
+        'Tên lớp học là bắt buộc.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -63,7 +63,7 @@ export class ClassesService {
 
     throw apiError(
       'CODE_GENERATION_FAILED',
-      'Could not generate a unique class code — try again.',
+      'Không thể tạo mã lớp học duy nhất — vui lòng thử lại.',
       HttpStatus.INTERNAL_SERVER_ERROR,
     );
   }
@@ -72,7 +72,7 @@ export class ClassesService {
     if (!code?.trim()) {
       throw apiError(
         'VALIDATION_ERROR',
-        'Class code is required.',
+        'Mã lớp học là bắt buộc.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -83,7 +83,7 @@ export class ClassesService {
     if (!klass) {
       throw apiError(
         'CLASS_NOT_FOUND',
-        'No class exists with that code.',
+        'Không có lớp học nào với mã này.',
         HttpStatus.NOT_FOUND,
       );
     }
@@ -134,7 +134,7 @@ export class ClassesService {
     });
 
     if (!klass) {
-      throw apiError('CLASS_NOT_FOUND', 'Class does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('CLASS_NOT_FOUND', 'Lớp học không tồn tại.', HttpStatus.NOT_FOUND);
     }
     return klass;
   }
@@ -153,7 +153,7 @@ export class ClassesService {
     if (!(await this.isMember(classId, user.sub))) {
       throw apiError(
         'FORBIDDEN',
-        'You are not a member of this class.',
+        'Bạn không phải là thành viên của lớp học này.',
         HttpStatus.FORBIDDEN,
       );
     }
@@ -166,12 +166,12 @@ export class ClassesService {
       select: { teacherId: true },
     });
     if (!klass) {
-      throw apiError('CLASS_NOT_FOUND', 'Class does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('CLASS_NOT_FOUND', 'Lớp học không tồn tại.', HttpStatus.NOT_FOUND);
     }
     if (user.role !== 'admin' && klass.teacherId !== user.sub) {
       throw apiError(
         'FORBIDDEN',
-        'Only the class teacher can do this.',
+        'Chỉ giáo viên của lớp học mới có thể thực hiện thao tác này.',
         HttpStatus.FORBIDDEN,
       );
     }

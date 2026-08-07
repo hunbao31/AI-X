@@ -10,6 +10,13 @@ import { Badge } from '@/components/ui/Badge';
 import { staggerContainer, fadeSlideUp } from '@/lib/animations';
 import type { QuizHistoryEntry } from '@/lib/types';
 
+// Display-only labels for the QuizMode enum — comparisons elsewhere
+// (e.g. h.mode === 'exam') keep using the original English values.
+const MODE_LABEL: Record<string, string> = {
+  practice: 'Luyện tập',
+  exam: 'Kiểm tra',
+};
+
 function formatDuration(seconds: number | null): string {
   if (seconds === null) return '—';
   const m = Math.floor(seconds / 60);
@@ -26,25 +33,25 @@ export default function QuizHistoryPage() {
     apiGet<QuizHistoryEntry[]>('/api/v1/users/me/quiz-history')
       .then(setHistory)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Failed to load history.'),
+        setError(err instanceof Error ? err.message : 'Không thể tải lịch sử.'),
       )
       .finally(() => setLoading(false));
   }, []);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold text-white">Quiz History</h1>
+      <h1 className="text-2xl font-bold text-white">Lịch sử trắc nghiệm</h1>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {loading ? (
-        <p className="text-slate-400">Loading history…</p>
+        <p className="text-slate-400">Đang tải lịch sử…</p>
       ) : history.length === 0 ? (
         <Card>
           <p className="text-slate-300">
-            No quizzes completed yet —{' '}
+            Chưa hoàn thành bài trắc nghiệm nào —{' '}
             <Link href="/quizzes" className="text-indigo-300 hover:text-indigo-200">
-              find one to play
+              tìm một bài để chơi
             </Link>
             .
           </p>
@@ -62,7 +69,7 @@ export default function QuizHistoryPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-white">{h.title}</p>
                   <p className="mt-1 text-xs text-slate-400">
-                    {new Date(h.completedAt).toLocaleString('en-US', {
+                    {new Date(h.completedAt).toLocaleString('vi-VN', {
                       month: 'short',
                       day: 'numeric',
                       hour: 'numeric',
@@ -72,7 +79,7 @@ export default function QuizHistoryPage() {
                     {formatDuration(h.durationSeconds)}
                     {' · '}
                     <Badge tone={h.mode === 'exam' ? 'red' : 'green'} className="ml-1">
-                      {h.mode}
+                      {MODE_LABEL[h.mode] ?? h.mode}
                     </Badge>
                   </p>
                 </div>
@@ -81,10 +88,10 @@ export default function QuizHistoryPage() {
                     <p className="text-lg font-bold text-white">
                       {h.correctCount}/{h.totalCount}
                     </p>
-                    <p className="text-xs text-slate-400">{h.score} pts</p>
+                    <p className="text-xs text-slate-400">{h.score} điểm</p>
                   </div>
                   <Link href={`/quiz/${h.setId}`}>
-                    <Button variant="secondary">Replay</Button>
+                    <Button variant="secondary">Chơi lại</Button>
                   </Link>
                 </div>
               </Card>

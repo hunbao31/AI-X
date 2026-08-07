@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const XP_CORRECT = 10;
 const XP_INCORRECT = 3;
+
+type DbClient = PrismaService | Prisma.TransactionClient;
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -37,11 +40,24 @@ export class GamificationStore {
     );
   }
 
-  // xpOverride lets the quiz pipeline award boosted XP (speed/combo bonuses)
-  // while the plain practice flow keeps the flat +10/+3.
-  recordAttempt(userId: string, correct: boolean, xpOverride?: number) {
-    return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.gamification.findUnique({ where: { userId } });
+  // xpOverride lets callers award boosted/custom XP (quiz speed/combo
+  // bonuses, forum rewards) while the plain flow keeps the flat +10/+3.
+  //
+  // `tx` lets a caller that's already inside its own transaction (e.g. the
+  // forum service granting XP + bumping a denormalized counter atomically)
+  // pass its client through instead of opening a nested transaction — Prisma
+  // has no true nested-transaction support, so when `tx` is given we just run
+  // the read-modify-write directly against it. Existing call sites that pass
+  // no `tx` are unaffected: this still opens its own transaction exactly as
+  // before.
+  recordAttempt(
+    userId: string,
+    correct: boolean,
+    xpOverride?: number,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const apply = async (client: DbClient) => {
+      const existing = await client.gamification.findUnique({ where: { userId } });
       const today = todayKey();
 
       const gained = xpOverride ?? (correct ? XP_CORRECT : XP_INCORRECT);
@@ -60,11 +76,34 @@ export class GamificationStore {
         streak = 1;
       }
 
-      return tx.gamification.upsert({
+      return client.gamification.upsert({
         where: { userId },
         create: { userId, xp, level, streak, lastActiveDate: today },
         update: { xp, level, streak, lastActiveDate: today },
       });
-    });
+    };
+
+    if (tx) return apply(tx);
+    return this.prisma.$transaction((txClient) => apply(txClient));
+  }
+
+  // Adjusts XP by a signed delta without touching streak/lastActiveDate —
+  // for corrections (e.g. retracting a mistaken upvote's +5) that shouldn't
+  // read as a fresh "did something today" activity. Floors at 0.
+  adjustXp(userId: string, delta: number, tx?: Prisma.TransactionClient) {
+    const apply = async (client: DbClient) => {
+      const existing = await client.gamification.findUnique({ where: { userId } });
+      const xp = Math.max(0, (existing?.xp ?? 0) + delta);
+      const level = Math.floor(xp / 100);
+
+      return client.gamification.upsert({
+        where: { userId },
+        create: { userId, xp, level, streak: 0, lastActiveDate: null },
+        update: { xp, level },
+      });
+    };
+
+    if (tx) return apply(tx);
+    return this.prisma.$transaction((txClient) => apply(txClient));
   }
 }

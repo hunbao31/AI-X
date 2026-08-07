@@ -61,6 +61,30 @@ export class AddExerciseToSetDto {
   exerciseId!: string;
 }
 
+// Fast-path authoring: create a question AND attach it to the set in one
+// call, instead of "create in the bank, then add from the bank" — mirrors
+// the CSV row shape (optionA-D + a letter-or-text correctAnswer) so the
+// same resolveAnswerFromOptions() helper backs both paths identically.
+export class CreateInlineQuestionDto {
+  question!: string;
+  optionA!: string;
+  optionB!: string;
+  optionC?: string;
+  optionD?: string;
+  correctAnswer!: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
+}
+
+export class ReorderSetDto {
+  // Every exerciseId currently in the set, in the desired order.
+  exerciseIds!: string[];
+}
+
+export class ImportSetDto {
+  // Optionally attach the imported copy to one of the importer's classes.
+  classId?: string | null;
+}
+
 export interface SubmittedAnswer {
   exerciseId: string;
   answer: string;

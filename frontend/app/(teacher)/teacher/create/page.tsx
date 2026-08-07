@@ -21,7 +21,7 @@ export default function TeacherCreatePage() {
       await apiPost('/api/v1/exercises', payload);
       router.push('/teacher/manage');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create exercise.');
+      setError(err instanceof Error ? err.message : 'Không thể tạo bài tập.');
       setSubmitting(false);
     }
   }
@@ -30,17 +30,17 @@ export default function TeacherCreatePage() {
     <div className="mx-auto max-w-2xl">
       <Card className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-2xl font-bold text-white">Create Exercise</h1>
+          <h1 className="text-2xl font-bold text-white">Tạo bài tập</h1>
           <a
             href="/teacher/manage?import=1"
             className="text-sm font-medium text-indigo-300 hover:text-indigo-200"
           >
-            Many questions? Import from CSV →
+            Nhiều câu hỏi? Nhập từ CSV/Excel →
           </a>
         </div>
         <ExerciseForm
-          submitLabel="Create Exercise"
-          submittingLabel="Creating…"
+          submitLabel="Tạo bài tập"
+          submittingLabel="Đang tạo…"
           submitting={submitting}
           error={error}
           onSubmit={handleSubmit}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, FormEvent } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { apiGet, apiPost } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -10,6 +11,7 @@ import { getStoredUser } from '@/lib/session';
 import type { ClassSummary, SetSummary, QuizMode } from '@/lib/types';
 
 export default function TeacherSetsPage() {
+  const router = useRouter();
   const [sets, setSets] = useState<SetSummary[]>([]);
   const [classes, setClasses] = useState<ClassSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,7 @@ export default function TeacherSetsPage() {
         setClasses(classList);
       })
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Failed to load quiz sets.'),
+        setError(err instanceof Error ? err.message : 'Không thể tải danh sách bộ đề.'),
       )
       .finally(() => setLoading(false));
   }
@@ -57,16 +59,11 @@ export default function TeacherSetsPage() {
         mode,
         timeLimitPerQuestion: timeLimit === '' ? null : Number(timeLimit),
       });
-      setTitle('');
-      setDescription('');
-      setClassId('');
-      setIsPublic(false);
-      setMode('practice');
-      setTimeLimit('');
-      load();
-      void created;
+      // Straight into the builder — creating a set is step one of "author
+      // questions fast," not a detour back through a list.
+      router.push(`/teacher/sets/${created.id}`);
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create set.');
+      setCreateError(err instanceof Error ? err.message : 'Không thể tạo bộ đề.');
     } finally {
       setCreating(false);
     }
@@ -74,37 +71,37 @@ export default function TeacherSetsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold text-white">Quiz Sets</h1>
+      <h1 className="text-2xl font-bold text-white">Bộ đề</h1>
 
       <Card className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">Create a quiz set</h2>
+        <h2 className="text-lg font-semibold text-white">Tạo bộ đề</h2>
         <form onSubmit={handleCreate} className="space-y-4">
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Title, e.g. Algebra Speed Round"
+            placeholder="Tiêu đề, VD: Vòng tốc độ Đại số"
             required
             className="input-base"
           />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description (optional)"
+            placeholder="Mô tả (không bắt buộc)"
             rows={2}
             className="input-base"
           />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-300">
-                Class
+                Lớp học
               </label>
               <select
                 value={classId}
                 onChange={(e) => setClassId(e.target.value)}
                 className="input-base"
               >
-                <option value="">No class (standalone)</option>
+                <option value="">Không thuộc lớp (độc lập)</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -114,20 +111,20 @@ export default function TeacherSetsPage() {
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-300">
-                Mode
+                Chế độ
               </label>
               <select
                 value={mode}
                 onChange={(e) => setMode(e.target.value as QuizMode)}
                 className="input-base"
               >
-                <option value="practice">Practice — instant feedback</option>
-                <option value="exam">Exam — answers hidden</option>
+                <option value="practice">Luyện tập — phản hồi ngay</option>
+                <option value="exam">Kiểm tra — ẩn đáp án</option>
               </select>
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-300">
-                Seconds per question
+                Số giây mỗi câu
               </label>
               <input
                 type="number"
@@ -135,7 +132,7 @@ export default function TeacherSetsPage() {
                 max={600}
                 value={timeLimit}
                 onChange={(e) => setTimeLimit(e.target.value)}
-                placeholder="Untimed"
+                placeholder="Không giới hạn thời gian"
                 className="input-base"
               />
             </div>
@@ -147,13 +144,13 @@ export default function TeacherSetsPage() {
                   onChange={(e) => setIsPublic(e.target.checked)}
                   className="h-4 w-4 accent-indigo-500"
                 />
-                Public
+                Công khai
               </label>
             </div>
           </div>
           {createError && <p className="text-sm text-red-400">{createError}</p>}
           <Button type="submit" disabled={creating}>
-            {creating ? 'Creating…' : 'Create set'}
+            {creating ? 'Đang tạo…' : 'Tạo bộ đề'}
           </Button>
         </form>
       </Card>
@@ -161,11 +158,11 @@ export default function TeacherSetsPage() {
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {loading ? (
-        <p className="text-slate-400">Loading quiz sets…</p>
+        <p className="text-slate-400">Đang tải danh sách bộ đề…</p>
       ) : sets.length === 0 ? (
         <Card>
           <p className="text-slate-300">
-            No quiz sets yet — create one above, then add questions to it.
+            Chưa có bộ đề nào — tạo một bộ ở trên, sau đó thêm câu hỏi vào.
           </p>
         </Card>
       ) : (
@@ -179,19 +176,19 @@ export default function TeacherSetsPage() {
                 <p className="truncate font-medium text-white">{s.title}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   {s.isPublic ? (
-                    <Badge tone="green">public</Badge>
+                    <Badge tone="green">công khai</Badge>
                   ) : s.class ? (
                     <Badge tone="indigo">{s.class.name}</Badge>
                   ) : (
-                    <Badge>private</Badge>
+                    <Badge>riêng tư</Badge>
                   )}
                   <span className="text-xs text-slate-400">
-                    {s._count.items} questions · {s._count.attempts} attempts
+                    {s._count.items} câu hỏi · {s._count.attempts} lượt làm
                   </span>
                 </div>
               </div>
               <Link href={`/teacher/sets/${s.id}`}>
-                <Button variant="secondary">Manage</Button>
+                <Button variant="secondary">Quản lý</Button>
               </Link>
             </Card>
           ))}

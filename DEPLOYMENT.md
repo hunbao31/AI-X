@@ -77,6 +77,16 @@ git push -u origin main
 directory `backend`, build command `npm install && npm run build`, start
 command `npm start`, same environment variables.)*
 
+**⚠️ Forum image uploads use local disk storage** (`backend/uploads/forum/`,
+served at `/uploads/forum/...`) — this is explicitly a "local for now"
+placeholder, not production-ready on Railway/Render/most container hosts:
+their filesystems are ephemeral, so every redeploy (or restart) silently
+wipes every uploaded forum image, leaving posts with broken image links.
+Before shipping the forum feature to real users, swap
+`backend/src/forum/image.util.ts`'s `saveForumImage` for an S3/Cloudinary/R2
+SDK call that returns a persistent public URL — nothing else in the forum
+module needs to change, since callers only ever see the returned path.
+
 ---
 
 ## 3. Frontend — Vercel

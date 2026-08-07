@@ -21,7 +21,15 @@ import type {
   XpLeaderboardEntry,
   ContinueInfo,
   RecentActivity,
+  StudentCatalogChuong,
+  StudentStepResult,
 } from '@/lib/types';
+
+const MUC_DO_TONE: Record<StudentStepResult['muc_do'], 'red' | 'yellow' | 'green'> = {
+  'Can chu y': 'red',
+  'Chua chac chan': 'yellow',
+  'Co ve vung': 'green',
+};
 
 export default function DashboardPage() {
   const me = getStoredUser();
@@ -46,6 +54,38 @@ export default function DashboardPage() {
   const [joinError, setJoinError] = useState('');
   const [joining, setJoining] = useState(false);
 
+  // Chương trình SGK dùng chung cho mọi lớp (không phụ thuộc selectedClass),
+  // chỉ hiển thị khi đã chọn 1 lớp — đúng luồng "vào lớp -> thấy chương/bài".
+  const [sgkCatalog, setSgkCatalog] = useState<StudentCatalogChuong[]>([]);
+  const [sgkCollapsed, setSgkCollapsed] = useState<Set<string>>(new Set());
+
+  // Báo cáo AI (Knowledge Tracing) — gọi theo yêu cầu (không tự động ở mỗi
+  // lần tải trang) vì model chạy qua tunnel cá nhân, tránh gọi liên tục.
+  const [aiReport, setAiReport] = useState<StudentStepResult[] | null>(null);
+  const [aiReportLoading, setAiReportLoading] = useState(false);
+  const [aiReportError, setAiReportError] = useState('');
+
+  async function loadAiReport() {
+    setAiReportLoading(true);
+    setAiReportError('');
+    try {
+      setAiReport(await apiGet<StudentStepResult[]>('/api/v1/diagnostic/me/report'));
+    } catch (err) {
+      setAiReportError(err instanceof Error ? err.message : 'Không thể tải báo cáo AI.');
+    } finally {
+      setAiReportLoading(false);
+    }
+  }
+
+  function toggleSgkChuong(chuongSgk: string) {
+    setSgkCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(chuongSgk)) next.delete(chuongSgk);
+      else next.add(chuongSgk);
+      return next;
+    });
+  }
+
   function loadAll() {
     Promise.all([
       apiGet<AnalyticsSummary>('/api/v1/analytics'),
@@ -54,6 +94,7 @@ export default function DashboardPage() {
       apiGet<TopicRecommendation[]>('/api/v1/recommendation/topics'),
       apiGet<TopicAnalytics[]>('/api/v1/analytics/topics'),
       apiGet<XpLeaderboardEntry[]>('/api/v1/leaderboard/global'),
+      apiGet<StudentCatalogChuong[]>('/api/v1/diagnostic/catalog'),
       apiGet<ContinueInfo | null>('/api/v1/users/me/continue'),
       apiGet<RecentActivity>('/api/v1/users/me/recent-activity'),
     ])
@@ -65,6 +106,7 @@ export default function DashboardPage() {
           recs,
           topics,
           leaderboard,
+          sgk,
           cont,
           recentActivity,
         ]) => {
@@ -74,12 +116,13 @@ export default function DashboardPage() {
           setRecommendations(recs);
           setTopicProgress(topics);
           setTopPlayers(leaderboard.slice(0, 5));
+          setSgkCatalog(sgk);
           setContinueInfo(cont);
           setRecent(recentActivity);
         },
       )
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Failed to load dashboard.'),
+        setError(err instanceof Error ? err.message : 'Không thể tải trang tổng quan.'),
       )
       .finally(() => setLoading(false));
   }
@@ -95,7 +138,7 @@ export default function DashboardPage() {
     if (loading || greetedRef.current) return;
     greetedRef.current = true;
     const username = getStoredUser()?.username;
-    mascot.react('greet', username ? `Hi ${username}!` : 'Hi!');
+    mascot.react('greet', username ? `Chào ${username}!` : 'Xin chào!');
     if (!recent?.lastQuiz && !recent?.lastTopic) {
       mascot.setMood('sleepy');
     } else if (recommendations.some((r) => r.action === 'repeat')) {
@@ -110,7 +153,7 @@ export default function DashboardPage() {
     try {
       setSelectedClass(await apiGet<ClassDetail>(`/api/v1/classes/${id}`));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load class.');
+      setError(err instanceof Error ? err.message : 'Không thể tải lớp học.');
     } finally {
       setClassLoading(false);
     }
@@ -129,32 +172,32 @@ export default function DashboardPage() {
       const classList = await apiGet<ClassSummary[]>('/api/v1/classes');
       setClasses(classList);
     } catch (err) {
-      setJoinError(err instanceof Error ? err.message : 'Failed to join class.');
+      setJoinError(err instanceof Error ? err.message : 'Không thể tham gia lớp học.');
     } finally {
       setJoining(false);
     }
   }
 
-  if (loading) return <p className="text-slate-400">Loading dashboard…</p>;
+  if (loading) return <p className="text-slate-400">Đang tải trang tổng quan…</p>;
 
   if (error || !summary || !gamification) {
-    return <p className="text-red-400">{error || 'No analytics available.'}</p>;
+    return <p className="text-red-400">{error || 'Không có dữ liệu phân tích.'}</p>;
   }
 
   const xpIntoLevel = gamification.xp % 100;
   const weakTopics = recommendations.filter((r) => r.action === 'repeat');
 
   const stats = [
-    { label: 'Total attempts', value: summary.totalAttempts },
-    { label: 'Accuracy', value: `${summary.accuracy}%` },
-    { label: 'Correct', value: summary.correct },
-    { label: 'Incorrect', value: summary.incorrect },
+    { label: 'Tổng số lượt làm', value: summary.totalAttempts },
+    { label: 'Độ chính xác', value: `${summary.accuracy}%` },
+    { label: 'Đúng', value: summary.correct },
+    { label: 'Sai', value: summary.incorrect },
   ];
 
   return (
     <div className="mx-auto max-w-6xl">
       <h1 className="mb-6 text-2xl font-bold text-white">
-        Welcome back{me ? `, ${me.username}` : ''} 👋
+        Chào mừng trở lại{me ? `, ${me.username}` : ''} 👋
       </h1>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px,1fr]">
@@ -167,7 +210,7 @@ export default function DashboardPage() {
         >
           <Card className="space-y-4 lg:sticky lg:top-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">🏆 Top players</h2>
+              <h2 className="text-lg font-semibold text-white">🏆 Người chơi hàng đầu</h2>
             </div>
             <XpLeaderboard
               entries={topPlayers}
@@ -178,7 +221,7 @@ export default function DashboardPage() {
               href="/leaderboard"
               className="block text-center text-sm font-medium text-indigo-300 hover:text-indigo-200"
             >
-              View full leaderboard →
+              Xem bảng xếp hạng đầy đủ →
             </Link>
           </Card>
         </motion.aside>
@@ -196,7 +239,7 @@ export default function DashboardPage() {
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-widest text-indigo-300">
-                    Continue Learning
+                    Tiếp tục học
                   </p>
                   {continueInfo ? (
                     <>
@@ -204,7 +247,7 @@ export default function DashboardPage() {
                         {continueInfo.title}
                       </h2>
                       <p className="mt-0.5 text-sm text-slate-400">
-                        Resume at question {continueInfo.lastQuestionIndex + 1} of{' '}
+                        Tiếp tục từ câu {continueInfo.lastQuestionIndex + 1}/
                         {continueInfo.totalCount}
                       </p>
                     </>
@@ -220,10 +263,10 @@ export default function DashboardPage() {
                   ) : (
                     <>
                       <h2 className="mt-1 text-xl font-bold text-white">
-                        Pick your first quiz
+                        Chọn bài trắc nghiệm đầu tiên
                       </h2>
                       <p className="mt-0.5 text-sm text-slate-400">
-                        Join a class or browse public quizzes to begin.
+                        Tham gia lớp học hoặc khám phá các bài trắc nghiệm công khai để bắt đầu.
                       </p>
                     </>
                   )}
@@ -248,24 +291,24 @@ export default function DashboardPage() {
                             : '/quizzes'
                       }
                     >
-                      <Button>Start Now →</Button>
+                      <Button>Bắt đầu ngay →</Button>
                     </Link>
                   </motion.div>
                   <Link href="/quick-quiz">
-                    <Button variant="secondary">🎲 Quick Quiz</Button>
+                    <Button variant="secondary">🎲 Trắc nghiệm nhanh</Button>
                   </Link>
                 </div>
               </div>
               {recent?.lastQuiz && (
                 <p className="mt-4 border-t border-white/10 pt-3 text-sm text-slate-400">
-                  Recent: you scored{' '}
+                  Gần đây: bạn đạt{' '}
                   <span className="font-semibold text-white">
                     {recent.lastQuiz.correctCount}/{recent.lastQuiz.totalCount}
                   </span>{' '}
-                  in <span className="font-semibold text-white">{recent.lastQuiz.title}</span>
+                  trong <span className="font-semibold text-white">{recent.lastQuiz.title}</span>
                   {recent.lastTopic && (
                     <>
-                      {' · last topic: '}
+                      {' · chủ đề gần nhất: '}
                       <span className="text-slate-300">{recent.lastTopic.topic}</span>
                     </>
                   )}
@@ -278,15 +321,15 @@ export default function DashboardPage() {
             <Card>
               <div className="mb-4 flex items-center justify-between">
                 <span className="bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text text-lg font-bold text-transparent">
-                  Level {gamification.level}
+                  Cấp độ {gamification.level}
                 </span>
                 <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-sm text-slate-200">
-                  🔥 {gamification.streak}-day streak
+                  🔥 Chuỗi {gamification.streak} ngày
                 </span>
               </div>
               <div className="mb-1 flex justify-between text-sm text-slate-400">
                 <span>XP</span>
-                <span>{xpIntoLevel}/100 to next level</span>
+                <span>{xpIntoLevel}/100 để lên cấp</span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
                 <motion.div
@@ -297,7 +340,7 @@ export default function DashboardPage() {
                 />
               </div>
               <p className="mt-2 text-right text-xs text-slate-500">
-                {gamification.xp} XP total
+                Tổng {gamification.xp} XP
               </p>
             </Card>
           </motion.div>
@@ -323,7 +366,7 @@ export default function DashboardPage() {
           {gamification.badges && gamification.badges.some((b) => b.earned) && (
             <motion.div variants={fadeSlideUp}>
               <Card className="space-y-3">
-                <h2 className="text-lg font-semibold text-white">Badges</h2>
+                <h2 className="text-lg font-semibold text-white">Huy hiệu</h2>
                 <div className="flex flex-wrap gap-2">
                   {gamification.badges.map((b) => (
                     <span
@@ -348,13 +391,13 @@ export default function DashboardPage() {
           {topicProgress.length > 0 && (
             <motion.div variants={fadeSlideUp}>
               <Card className="space-y-3">
-                <h2 className="text-lg font-semibold text-white">Topic progress</h2>
+                <h2 className="text-lg font-semibold text-white">Tiến độ theo chủ đề</h2>
                 {topicProgress.slice(0, 6).map((t) => (
                   <div key={t.topic}>
                     <div className="mb-1 flex justify-between text-sm">
                       <span className="text-slate-300">{t.topic}</span>
                       <span className="text-slate-400">
-                        {t.masteryScore}% · {t.correctRate}% correct
+                        {t.masteryScore}% · {t.correctRate}% đúng
                       </span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
@@ -375,9 +418,9 @@ export default function DashboardPage() {
           <motion.div variants={fadeSlideUp}>
             <Card className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-white">My Classes</h2>
+                <h2 className="text-lg font-semibold text-white">Lớp học của tôi</h2>
                 <span className="text-xs uppercase tracking-wide text-slate-500">
-                  Step 1 · choose a class
+                  Bước 1 · chọn lớp học
                 </span>
               </div>
 
@@ -386,20 +429,20 @@ export default function DashboardPage() {
                   type="text"
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                  placeholder="Enter class code (e.g. 7KPQ2M)"
+                  placeholder="Nhập mã lớp học (vd: 7KPQ2M)"
                   maxLength={6}
                   className="input-base flex-1 uppercase tracking-widest"
                 />
                 <Button type="submit" disabled={joining || joinCode.length < 6}>
-                  {joining ? 'Joining…' : 'Join'}
+                  {joining ? 'Đang tham gia…' : 'Tham gia'}
                 </Button>
               </form>
               {joinError && <p className="text-sm text-red-400">{joinError}</p>}
 
               {classes.length === 0 ? (
                 <p className="text-sm text-slate-400">
-                  You have not joined any classes yet — ask your teacher for a
-                  join code.
+                  Bạn chưa tham gia lớp học nào — hãy hỏi giáo viên để lấy mã
+                  tham gia.
                 </p>
               ) : (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -418,8 +461,8 @@ export default function DashboardPage() {
                     >
                       <p className="font-medium text-white">{c.name}</p>
                       <p className="mt-1 text-xs text-slate-400">
-                        Teacher: {c.teacher.username} · {c._count.topics} topics ·{' '}
-                        {c._count.sets} quizzes
+                        Giáo viên: {c.teacher.username} · {c._count.topics} chủ đề ·{' '}
+                        {c._count.sets} bài trắc nghiệm
                       </p>
                     </motion.button>
                   ))}
@@ -429,7 +472,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Steps 2 + 3: pick a topic or quiz inside the selected class */}
-          {classLoading && <p className="text-slate-400">Loading class…</p>}
+          {classLoading && <p className="text-slate-400">Đang tải lớp học…</p>}
 
           {selectedClass && !classLoading && (
             <motion.div variants={fadeSlideUp} initial="hidden" animate="show">
@@ -439,17 +482,17 @@ export default function DashboardPage() {
                     {selectedClass.name}
                   </h2>
                   <span className="text-xs uppercase tracking-wide text-slate-500">
-                    Step 2 · pick a topic or quiz
+                    Bước 2 · chọn chủ đề hoặc bài trắc nghiệm
                   </span>
                 </div>
 
                 <div>
                   <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
-                    Topics
+                    Chủ đề
                   </h3>
                   {selectedClass.topics.length === 0 ? (
                     <p className="text-sm text-slate-400">
-                      No topics in this class yet.
+                      Lớp học này chưa có chủ đề nào.
                     </p>
                   ) : (
                     <div className="flex flex-wrap gap-2">
@@ -461,7 +504,7 @@ export default function DashboardPage() {
                         >
                           {t.name}
                           <span className="ml-2 text-xs text-slate-500">
-                            {t._count.exercises} exercises
+                            {t._count.exercises} bài tập
                           </span>
                         </Link>
                       ))}
@@ -471,11 +514,11 @@ export default function DashboardPage() {
 
                 <div>
                   <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
-                    Quizzes
+                    Trắc nghiệm
                   </h3>
                   {selectedClass.sets.length === 0 ? (
                     <p className="text-sm text-slate-400">
-                      No quizzes in this class yet.
+                      Lớp học này chưa có bài trắc nghiệm nào.
                     </p>
                   ) : (
                     <div className="space-y-2">
@@ -487,17 +530,64 @@ export default function DashboardPage() {
                           <div>
                             <p className="text-sm font-medium text-white">{s.title}</p>
                             <p className="text-xs text-slate-400">
-                              {s._count.items} questions
+                              {s._count.items} câu hỏi
                               {s.timeLimitPerQuestion
-                                ? ` · ${s.timeLimitPerQuestion}s per question`
-                                : ' · untimed'}
+                                ? ` · ${s.timeLimitPerQuestion} giây mỗi câu`
+                                : ' · không giới hạn thời gian'}
                             </p>
                           </div>
                           <Link href={`/quiz/${s.id}`}>
-                            <Button variant="secondary">Open</Button>
+                            <Button variant="secondary">Mở</Button>
                           </Link>
                         </div>
                       ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
+                    Chương trình học (SGK)
+                  </h3>
+                  {sgkCatalog.length === 0 ? (
+                    <p className="text-sm text-slate-400">
+                      Giáo viên chưa soạn câu hỏi chẩn đoán nào.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {sgkCatalog.map((chuong) => {
+                        const isCollapsed = sgkCollapsed.has(chuong.chuongSgk);
+                        return (
+                          <div key={chuong.chuongSgk} className="rounded-xl border border-white/10">
+                            <button
+                              type="button"
+                              onClick={() => toggleSgkChuong(chuong.chuongSgk)}
+                              className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold text-white"
+                            >
+                              <span>{chuong.chuongSgk}</span>
+                              <span className="text-xs font-normal text-slate-400">
+                                {isCollapsed ? '▸' : '▾'}
+                              </span>
+                            </button>
+                            {!isCollapsed && (
+                              <div className="flex flex-wrap gap-2 px-3 pb-3">
+                                {chuong.bai.map((b) => (
+                                  <Link
+                                    key={b.baiSgk}
+                                    href={`/practice-sgk/${b.baiSgk}`}
+                                    className="rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-sm font-medium text-slate-300 transition-colors duration-200 hover:bg-white/10 hover:text-white"
+                                  >
+                                    Bài {b.baiSgk}
+                                    <span className="ml-2 text-xs text-slate-500">
+                                      {b.questionCount} câu hỏi
+                                    </span>
+                                  </Link>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -505,12 +595,57 @@ export default function DashboardPage() {
             </motion.div>
           )}
 
+          {/* Mức độ hiểu (AI) — gọi model KT theo yêu cầu, gộp toàn bộ lịch
+              sử làm câu hỏi chẩn đoán của học sinh. */}
+          <motion.div variants={fadeSlideUp}>
+            <Card className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-white">Mức độ hiểu (AI)</h2>
+                <Button variant="secondary" onClick={loadAiReport} disabled={aiReportLoading}>
+                  {aiReportLoading ? 'Đang phân tích…' : 'Xem mức độ hiểu'}
+                </Button>
+              </div>
+              {aiReportError && <p className="text-sm text-red-400">{aiReportError}</p>}
+              {aiReport && aiReport.length === 0 && (
+                <p className="text-sm text-slate-400">
+                  Bạn chưa làm câu hỏi chẩn đoán nào — vào một lớp học và chọn 1 bài trong
+                  Chương trình học để bắt đầu.
+                </p>
+              )}
+              {aiReport && aiReport.length > 0 && (
+                <div className="space-y-2">
+                  {aiReport.map((step, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 p-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-white">{step.bai_tap}</p>
+                        {step.canh_bao && step.tien_de_thieu.length > 0 && (
+                          <p className="mt-1 text-xs text-red-300">
+                            Tiền đề còn thiếu: {step.tien_de_thieu.join(', ')}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="text-sm font-semibold text-white">
+                          {step.phan_tram_hieu}%
+                        </span>
+                        <Badge tone={MUC_DO_TONE[step.muc_do]}>{step.muc_do}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </motion.div>
+
           {/* Adaptive recommendation: repeat what you got wrong */}
           {weakTopics.length > 0 && (
             <motion.div variants={fadeSlideUp}>
               <Card className="space-y-3">
                 <h2 className="text-lg font-semibold text-white">
-                  Recommended for you
+                  Đề xuất cho bạn
                 </h2>
                 {weakTopics.map((r) => (
                   <div
@@ -521,15 +656,15 @@ export default function DashboardPage() {
                       <p className="text-sm font-medium text-white">
                         {r.topic}{' '}
                         <Badge tone="red" className="ml-2">
-                          repeat
+                          ôn lại
                         </Badge>
                       </p>
                       <p className="mt-1 text-xs text-slate-400">
-                        {r.correctRate}% correct · mastery {r.masteryScore}/100
+                        {r.correctRate}% đúng · thành thạo {r.masteryScore}/100
                       </p>
                     </div>
                     <Link href={`/practice?topic=${encodeURIComponent(r.topic)}`}>
-                      <Button variant="secondary">Practice</Button>
+                      <Button variant="secondary">Luyện tập</Button>
                     </Link>
                   </div>
                 ))}

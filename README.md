@@ -18,9 +18,10 @@ Two independent apps, no monorepo tooling:
 | Classroom | `Class`, `ClassMember` | Teacher creates a class → 6-char join code → students join. |
 | Topics | `Topic` | Teacher-defined, class-scoped. Exercises can link to one via `topicId`. |
 | Exercises | `Exercise` | MCQ or free text; editable (`PATCH`); optional class-topic link. |
-| Quiz sets | `ExerciseSet`, `ExerciseSetItem`, `QuizAttempt` | Kahoot-style ordered sets, per-question timer, server-side grading, leaderboard. `roomCode` field reserved for future realtime lobbies. |
+| Quiz sets | `ExerciseSet`, `ExerciseSetItem`, `QuizAttempt` | Kahoot-style ordered sets, per-question timer, server-side grading, leaderboard. `roomCode` field reserved for future realtime lobbies. Questions are authored directly into a set (`POST /sets/:id/questions`) and belong to their creator (`Exercise.createdBy`) — a personal bank, not a shared pool. `isPublic` sets are browsable in the marketplace; importing one deep-clones both the set and its questions into the importer's own ownership. |
 | Progression | `Mastery`, `Attempt` | Per-topic mastery 0–100, every answer recorded. |
 | Gamification | `Gamification` | XP (+10 correct / +3 incorrect), levels (100 XP each), daily streaks. |
+| Forum | `ForumPost`, `ForumAnswer`, `ForumAnswerUpvote` | Image Q&A, StackOverflow-style. Answering (+10 XP), upvotes received (+5 XP, un-upvote retracts it), accepted answer (+50 XP, one per post). Visibility: public (no class) or class-members-only. `answerCount`/`rewardScore`/`hasAcceptedAnswer` denormalized onto the post for cheap feed sorting. |
 
 **Privacy**: quiz sets are `public`, class-only (visible to members), or
 private (creator only) — enforced server-side, and students never receive
@@ -46,6 +47,7 @@ POST  /exercises                  (teacher) supports topicId link + tags
 POST  /exercises/import           (teacher) bulk CSV {csv, topicId|topic, difficulty?}
                                   → {created, failed, errors[]} (invalid rows skipped)
 GET   /exercises?topic=&topicId=&difficulty=&type=&tag=&search=
+GET   /exercises/mine             (teacher) only the exercises I authored — same filters as above
 GET   /exercises/:id
 PATCH /exercises/:id              (owner) edit any field
 DELETE /exercises/:id             (owner)
@@ -58,6 +60,17 @@ GET   /sets/:id                   playable detail (answers stripped for students
 PATCH /sets/:id                   (owner) incl. mode switch
 POST  /sets/:id/add-exercise      (owner) {exerciseId}
 DELETE /sets/:id/exercises/:exerciseId
+POST  /sets/:id/questions         (owner) inline-author a question straight into the set —
+                                  {question, optionA, optionB, optionC?, optionD?,
+                                  correctAnswer, difficulty?} — also lands in your personal
+                                  bank (GET /exercises/mine), same resolver CSV import uses
+PATCH /sets/:id/reorder           (owner) {exerciseIds: [...]} persist drag-and-drop order
+DELETE /sets/:id                  (owner) removes the set only — questions stay in your bank
+GET   /sets/marketplace           published public sets: ?search=&page=&limit=
+                                  → paginated {data, meta:{page,limit,hasMore}}
+POST  /sets/:id/import            (teacher) {classId?} deep-clones a public set — new Exercise
+                                  rows too, so the importer's copy is fully independent and
+                                  freely editable without touching the original
 POST  /sets/:id/check             {exerciseId, answer, code?} → instant feedback (practice only)
 POST  /sets/:id/start             {code?} → create/resume in-progress attempt (auto-save anchor)
 PATCH /sets/attempts/:id/progress {answers, lastQuestionIndex} auto-save
@@ -90,6 +103,13 @@ GET   /analytics                  overall summary
 GET   /analytics/topics           per-topic correct rate + attempts
 GET   /recommendation             overall next step
 GET   /recommendation/topics      per-topic repeat / practice / advance
+
+POST  /forum/posts                multipart {image, description?, topicId?|classId?}
+GET   /forum/posts                feed: ?sort=newest|most_answered|most_rewarded&page=&limit=
+GET   /forum/posts/:id            full detail incl. answers[] (upvotedByMe per answer)
+POST  /forum/answers              multipart {postId, content, image?} → +10 XP
+POST  /forum/answers/:id/upvote   toggle; +5/-5 XP to the answer's author (never yourself)
+POST  /forum/answers/:id/accept   asker or teacher only → +50 XP, one accepted answer/post
 ```
 
 Every response uses the `{success, data, meta}` envelope; errors are
@@ -145,7 +165,9 @@ Runs at http://localhost:3000
 ## Frontend pages
 
 ```
-/login, /register            username (+ optional email) auth
+/                             landing page (logged-out only — logged-in users are
+                             redirected straight to their dashboard)
+/login, /register            username (+ optional email) auth, theme toggle
 /dashboard                   student home: progress, join class by code,
                              Class → Topic → Quiz picker (nothing auto-starts)
 /practice[?topic=...]        topic practice with explicit Start gate
@@ -156,11 +178,16 @@ Runs at http://localhost:3000
 
 /teacher/dashboard           stats + quick links
 /teacher/classes[/id]        create class, join code, members, topics
-/teacher/create              create exercise (optional class-topic link)
-/teacher/manage              list / edit / delete exercises
+/teacher/create              create a standalone exercise (optional class-topic link);
+                             not linked from the nav — inline authoring in the set
+                             builder is the primary path now
+/teacher/manage              "My Question Bank" — list / edit / delete my own exercises
 /teacher/exercises/[id]/edit edit form (PATCH)
-/teacher/sets[/id]           create sets, add/remove questions, visibility,
-                             timer, leaderboard
+/teacher/sets[/id]           create sets; build questions directly in the set (add,
+                             edit, delete, drag-and-drop reorder), publish/unpublish,
+                             delete the set, timer, leaderboard
+/teacher/marketplace         browse public sets from other teachers, search, import
+                             a deep-cloned copy into your own bank
 /teacher/settings            same settings panel
 ```
 

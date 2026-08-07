@@ -94,16 +94,16 @@ export interface MascotReactionPreset {
 }
 
 export const REACTION_PRESETS: Record<MascotReactionType, MascotReactionPreset> = {
-  correct: { expression: 'awesome', motion: 'jump', bubble: 'Awesome!', durationMs: 1600, glow: false },
-  fastCorrect: { expression: 'proud', motion: 'jump', bubble: 'So fast! ⚡', durationMs: 1600, glow: false },
-  streak: { expression: 'determined', motion: 'jump', bubble: 'On fire! 🔥', durationMs: 1800, glow: true },
-  wrong: { expression: 'oops', motion: 'shake', bubble: 'Oops!', durationMs: 1600, glow: false },
-  confusedRun: { expression: 'confused', motion: 'drop', bubble: "Let's slow down 🤔", durationMs: 2200, glow: false },
-  celebrate: { expression: 'excited', motion: 'jump', bubble: 'Amazing! 🎉', durationMs: 2400, glow: true },
-  encourage: { expression: 'cheer', motion: 'wave', bubble: 'You got this!', durationMs: 2400, glow: false },
-  rankUp: { expression: 'proud', motion: 'jump', bubble: 'Climbing! 📈', durationMs: 2000, glow: false },
+  correct: { expression: 'awesome', motion: 'jump', bubble: 'Tuyệt vời!', durationMs: 1600, glow: false },
+  fastCorrect: { expression: 'proud', motion: 'jump', bubble: 'Nhanh quá! ⚡', durationMs: 1600, glow: false },
+  streak: { expression: 'determined', motion: 'jump', bubble: 'Bốc cháy rồi! 🔥', durationMs: 1800, glow: true },
+  wrong: { expression: 'oops', motion: 'shake', bubble: 'Ui!', durationMs: 1600, glow: false },
+  confusedRun: { expression: 'confused', motion: 'drop', bubble: 'Từ từ đã nào 🤔', durationMs: 2200, glow: false },
+  celebrate: { expression: 'excited', motion: 'jump', bubble: 'Xuất sắc! 🎉', durationMs: 2400, glow: true },
+  encourage: { expression: 'cheer', motion: 'wave', bubble: 'Bạn làm được mà!', durationMs: 2400, glow: false },
+  rankUp: { expression: 'proud', motion: 'jump', bubble: 'Đang leo hạng! 📈', durationMs: 2000, glow: false },
   top3: { expression: 'cool', motion: 'jump', bubble: 'TOP 3! 😎', durationMs: 2600, glow: true },
-  greet: { expression: 'wave', motion: 'wave', bubble: 'Hi!', durationMs: 2600, glow: false },
-  gotit: { expression: 'gotit', motion: 'jump', bubble: 'Got it! 💡', durationMs: 1600, glow: false },
-  love: { expression: 'love', motion: 'jump', bubble: 'Love it! ❤️', durationMs: 2000, glow: false },
+  greet: { expression: 'wave', motion: 'wave', bubble: 'Chào bạn!', durationMs: 2600, glow: false },
+  gotit: { expression: 'gotit', motion: 'jump', bubble: 'Hiểu rồi! 💡', durationMs: 1600, glow: false },
+  love: { expression: 'love', motion: 'jump', bubble: 'Thích quá! ❤️', durationMs: 2000, glow: false },
 };

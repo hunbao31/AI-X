@@ -32,7 +32,7 @@ export default function CurriculumPage() {
     apiGet<CurriculumGrade[]>('/api/v1/curriculum')
       .then(setGrades)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Failed to load curriculum.'),
+        setError(err instanceof Error ? err.message : 'Không thể tải chương trình học.'),
       )
       .finally(() => setLoading(false));
   }, [router]);
@@ -40,7 +40,7 @@ export default function CurriculumPage() {
   if (loading) {
     return (
       <main className="curriculum-page">
-        <p>Loading curriculum…</p>
+        <p>Đang tải chương trình học…</p>
       </main>
     );
   }
@@ -48,7 +48,7 @@ export default function CurriculumPage() {
   if (error || !grades) {
     return (
       <main className="curriculum-page">
-        <p className="error-text">{error || 'No curriculum available.'}</p>
+        <p className="error-text">{error || 'Chưa có chương trình học nào.'}</p>
       </main>
     );
   }
@@ -56,10 +56,10 @@ export default function CurriculumPage() {
   return (
     <main className="curriculum-page">
       <a className="dashboard-back" href="/dashboard">
-        ← Back to dashboard
+        ← Quay lại bảng điều khiển
       </a>
 
-      <h1 className="curriculum-title">Curriculum</h1>
+      <h1 className="curriculum-title">Chương trình học</h1>
 
       {!selectedGrade ? (
         <div className="curriculum-grid">
@@ -72,7 +72,7 @@ export default function CurriculumPage() {
             >
               <span className="curriculum-card-title">{grade.name}</span>
               <span className="curriculum-card-meta">
-                {grade.topics.length} topic{grade.topics.length === 1 ? '' : 's'}
+                {grade.topics.length} chủ đề
               </span>
             </button>
           ))}
@@ -84,7 +84,7 @@ export default function CurriculumPage() {
             className="curriculum-back-inline"
             onClick={() => setSelectedGrade(null)}
           >
-            ← All grades
+            ← Tất cả khối lớp
           </button>
 
           <div className="curriculum-grid">
@@ -96,8 +96,7 @@ export default function CurriculumPage() {
               >
                 <span className="curriculum-card-title">{topic.name}</span>
                 <span className="curriculum-card-meta">
-                  {topic.exercises.length} exercise
-                  {topic.exercises.length === 1 ? '' : 's'}
+                  {topic.exercises.length} bài tập
                 </span>
               </a>
             ))}

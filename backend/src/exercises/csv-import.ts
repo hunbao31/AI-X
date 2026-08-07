@@ -17,6 +17,7 @@
 // not parsed.
 
 import { Difficulty } from './dto/create-exercise.dto';
+import { resolveAnswerFromOptions } from './answer-resolve';
 
 export interface ImportRowError {
   row: number; // 1-based, counting data rows as they appear in the file
@@ -39,7 +40,6 @@ export interface ParseResult {
 }
 
 const VALID_DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
-const ANSWER_LETTERS = ['A', 'B', 'C', 'D'];
 
 // RFC-4180-ish CSV: quoted fields, embedded commas, "" escapes, CRLF/LF.
 export function parseCsv(text: string): string[][] {
@@ -146,11 +146,14 @@ function mapHeader(cells: string[]): ColumnMap {
   };
 }
 
-export function parseQuestionRows(
-  text: string,
+// Shared by the CSV path (parseQuestionRows below, cells from parseCsv) and
+// the Excel path (excel-import.ts, cells read straight from a worksheet) —
+// same column layout/validation either way, only how `rows` is produced
+// differs.
+export function parseQuestionRowsFromCells(
+  rows: string[][],
   defaultDifficulty: Difficulty = 'easy',
 ): ParseResult {
-  const rows = parseCsv(text);
   const questions: ParsedQuestion[] = [];
   const errors: ImportRowError[] = [];
 
@@ -181,7 +184,7 @@ export function parseQuestionRows(
     }
 
     if (!question) {
-      errors.push({ row: rowNumber, reason: 'Missing question text.' });
+      errors.push({ row: rowNumber, reason: 'Thiếu nội dung câu hỏi.' });
       return;
     }
 
@@ -189,42 +192,27 @@ export function parseQuestionRows(
     if (options.length < 2) {
       errors.push({
         row: rowNumber,
-        reason: 'At least two options (optionA, optionB) are required.',
+        reason: 'Cần ít nhất hai lựa chọn (optionA, optionB).',
       });
       return;
     }
     if (new Set(options.map((o) => o.toLowerCase())).size !== options.length) {
-      errors.push({ row: rowNumber, reason: 'Options must be unique.' });
+      errors.push({ row: rowNumber, reason: 'Các lựa chọn phải khác nhau.' });
       return;
     }
 
     if (!correct) {
-      errors.push({ row: rowNumber, reason: 'Missing correctAnswer.' });
+      errors.push({ row: rowNumber, reason: 'Thiếu correctAnswer.' });
       return;
     }
 
     // Letter form ("B") or exact option text — both accepted.
-    let answer: string | undefined;
-    const letterIndex = ANSWER_LETTERS.indexOf(correct.toUpperCase());
-    if (correct.length === 1 && letterIndex >= 0) {
-      answer = options[letterIndex];
-      if (answer === undefined) {
-        errors.push({
-          row: rowNumber,
-          reason: `correctAnswer "${correct}" points at an empty option.`,
-        });
-        return;
-      }
-    } else {
-      answer = options.find((o) => o.toLowerCase() === correct.toLowerCase());
-      if (answer === undefined) {
-        errors.push({
-          row: rowNumber,
-          reason: 'correctAnswer must match one of the options (or be A/B/C/D).',
-        });
-        return;
-      }
+    const resolved = resolveAnswerFromOptions(options, correct);
+    if (resolved.error) {
+      errors.push({ row: rowNumber, reason: resolved.error });
+      return;
     }
+    const answer = resolved.answer as string;
 
     let difficulty = defaultDifficulty;
     if (difficultyRaw) {
@@ -232,7 +220,7 @@ export function parseQuestionRows(
       if (!VALID_DIFFICULTIES.includes(normalized)) {
         errors.push({
           row: rowNumber,
-          reason: `Invalid difficulty "${difficultyRaw}" (use easy/medium/hard).`,
+          reason: `Độ khó "${difficultyRaw}" không hợp lệ (dùng easy/medium/hard).`,
         });
         return;
       }
@@ -255,4 +243,11 @@ export function parseQuestionRows(
   });
 
   return { questions, errors };
+}
+
+export function parseQuestionRows(
+  text: string,
+  defaultDifficulty: Difficulty = 'easy',
+): ParseResult {
+  return parseQuestionRowsFromCells(parseCsv(text), defaultDifficulty);
 }

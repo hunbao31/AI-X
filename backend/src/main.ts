@@ -1,6 +1,9 @@
 import 'dotenv/config';
+import { join } from 'path';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import { ensureForumUploadDir } from './forum/image.util';
 
 // CORS origins come from FRONTEND_URL — a comma-separated list, so one
 // backend can serve e.g. the production domain plus a staging domain:
@@ -47,7 +50,13 @@ function buildOriginChecker(): (
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Forum image uploads (local disk — see forum/image.util.ts for the
+  // production caveat). Directory must exist before multer's diskStorage
+  // or our own fs.writeFile calls can write into it.
+  await ensureForumUploadDir();
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
   const frontendUrl = process.env.FRONTEND_URL;
   if (!frontendUrl) {

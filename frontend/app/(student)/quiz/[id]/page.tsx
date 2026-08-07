@@ -8,6 +8,7 @@ import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Avatar } from '@/components/ui/Avatar';
 import { McqOptions, AnswerFeedback } from '@/components/exercise/McqOptions';
 import { MathText } from '@/components/ui/MathText';
 import { XPCounter } from '@/components/ui/XPCounter';
@@ -35,6 +36,13 @@ import type {
 } from '@/lib/types';
 
 type Phase = 'intro' | 'playing' | 'submitting' | 'done';
+
+// Display-only labels for the QuizMode enum — comparisons elsewhere
+// (e.g. set.mode === 'practice') keep using the original English values.
+const MODE_LABEL: Record<string, string> = {
+  practice: 'Luyện tập',
+  exam: 'Kiểm tra',
+};
 
 function formatSeconds(total: number): string {
   const m = Math.floor(total / 60);
@@ -122,7 +130,7 @@ export default function QuizPlayerPage() {
         setPrior(gamification);
       })
       .catch((err) =>
-        setLoadError(err instanceof Error ? err.message : 'Failed to load quiz.'),
+        setLoadError(err instanceof Error ? err.message : 'Không thể tải bài trắc nghiệm.'),
       )
       .finally(() => setLoading(false));
   }, [setId, code]);
@@ -192,7 +200,7 @@ export default function QuizPlayerPage() {
           .catch(() => undefined);
       } catch (err) {
         setSubmitError(
-          err instanceof Error ? err.message : 'Failed to submit the quiz.',
+          err instanceof Error ? err.message : 'Không thể nộp bài trắc nghiệm.',
         );
         setPhase('playing');
       }
@@ -284,7 +292,7 @@ export default function QuizPlayerPage() {
         // row → confused, otherwise a quick "Oops!".
         if (check.correct) {
           if (comboRef.current >= 3) {
-            mascot.react('streak', `${comboRef.current} in a row! 🔥`);
+            mascot.react('streak', `${comboRef.current} liên tiếp! 🔥`);
           } else if (limit !== null && timeMs < limit * 1000 * 0.35) {
             mascot.react('fastCorrect');
           } else {
@@ -437,29 +445,29 @@ export default function QuizPlayerPage() {
     }
   }
 
-  if (loading) return <p className="text-center text-slate-400">Loading quiz…</p>;
+  if (loading) return <p className="text-center text-slate-400">Đang tải bài trắc nghiệm…</p>;
 
   if (loadError || !set) {
     return (
       <Card className="mx-auto max-w-2xl space-y-4">
-        <p className="text-red-400">{loadError || 'Quiz not found.'}</p>
+        <p className="text-red-400">{loadError || 'Không tìm thấy bài trắc nghiệm.'}</p>
         <form onSubmit={handleCodeSubmit} className="flex gap-2">
           <input
             type="text"
             value={codeInput}
             onChange={(e) => setCodeInput(e.target.value)}
-            placeholder="Have an access code? Enter it here"
+            placeholder="Bạn có mã truy cập? Nhập vào đây"
             className="input-base flex-1"
           />
           <Button type="submit" variant="secondary">
-            Unlock
+            Mở khóa
           </Button>
         </form>
         <Link
           href="/quizzes"
           className="inline-block text-sm text-indigo-300 hover:text-indigo-200"
         >
-          ← Back to quizzes
+          ← Quay lại danh sách trắc nghiệm
         </Link>
       </Card>
     );
@@ -478,41 +486,41 @@ export default function QuizPlayerPage() {
           <div className="flex items-start justify-between gap-4">
             <h1 className="text-2xl font-bold text-white">{set.title}</h1>
             <div className="flex gap-2">
-              <Badge tone={set.mode === 'exam' ? 'red' : 'green'}>{set.mode}</Badge>
+              <Badge tone={set.mode === 'exam' ? 'red' : 'green'}>{MODE_LABEL[set.mode] ?? set.mode}</Badge>
               {set.isPublic ? (
-                <Badge tone="green">public</Badge>
+                <Badge tone="green">công khai</Badge>
               ) : set.class ? (
                 <Badge tone="indigo">{set.class.name}</Badge>
               ) : set.hasAccessCode ? (
-                <Badge tone="yellow">code</Badge>
+                <Badge tone="yellow">cần mã</Badge>
               ) : null}
             </div>
           </div>
           {set.description && <p className="text-sm text-slate-300">{set.description}</p>}
           <div className="flex flex-wrap gap-4 text-sm text-slate-400">
-            <span>📋 {set.questionCount} questions</span>
+            <span>📋 {set.questionCount} câu hỏi</span>
             <span>
               {set.timeLimitPerQuestion
-                ? `⏱️ ${set.timeLimitPerQuestion}s per question`
-                : '⏱️ untimed'}
+                ? `⏱️ ${set.timeLimitPerQuestion} giây mỗi câu`
+                : '⏱️ không giới hạn thời gian'}
             </span>
-            {set.totalTimeLimit && <span>⌛ {formatSeconds(set.totalTimeLimit)} total</span>}
-            {(set.shuffleQuestions || set.shuffleAnswers) && <span>🔀 shuffled</span>}
-            <span>👤 by {set.creator.username}</span>
+            {set.totalTimeLimit && <span>⌛ tổng {formatSeconds(set.totalTimeLimit)}</span>}
+            {(set.shuffleQuestions || set.shuffleAnswers) && <span>🔀 đã trộn</span>}
+            <span>👤 bởi {set.creator.username}</span>
           </div>
           {set.mode === 'exam' && (
             <p className="rounded-xl border border-red-400/20 bg-red-500/10 p-3 text-xs text-red-300">
-              Exam mode: no feedback while playing, and correct answers stay
-              hidden afterwards.
+              Chế độ kiểm tra: không có phản hồi khi làm bài, và đáp án đúng
+              sẽ được ẩn sau khi nộp bài.
             </p>
           )}
           {set.questionCount === 0 ? (
             <p className="text-sm text-slate-400">
-              This quiz has no questions yet — check back later.
+              Bài trắc nghiệm này chưa có câu hỏi nào — hãy quay lại sau.
             </p>
           ) : (
             <Button onClick={handleStart} className="w-full">
-              Start quiz
+              Bắt đầu trắc nghiệm
             </Button>
           )}
         </Card>
@@ -544,21 +552,21 @@ export default function QuizPlayerPage() {
 
         <motion.div variants={fadeSlideUp}>
           <Card className="space-y-4 text-center">
-            <h1 className="text-2xl font-bold text-white">Quiz complete!</h1>
+            <h1 className="text-2xl font-bold text-white">Hoàn thành bài trắc nghiệm!</h1>
             <p className="bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text text-5xl font-bold text-transparent">
               {result.score}
             </p>
             <p className="text-sm text-slate-400">
-              {result.correctCount}/{result.totalCount} correct · Level{' '}
-              {result.gamification.level} · 🔥 {result.gamification.streak}-day streak
+              {result.correctCount}/{result.totalCount} đúng · Cấp độ{' '}
+              {result.gamification.level} · 🔥 Chuỗi {result.gamification.streak} ngày
             </p>
             <XPCounter gained={gainedXp} />
             <div className="flex justify-center gap-3">
               <Button variant="secondary" onClick={handleStart}>
-                Retry
+                Làm lại
               </Button>
               <Link href="/quizzes">
-                <Button variant="ghost">All quizzes</Button>
+                <Button variant="ghost">Tất cả trắc nghiệm</Button>
               </Link>
             </div>
           </Card>
@@ -567,10 +575,10 @@ export default function QuizPlayerPage() {
         <motion.div variants={fadeSlideUp}>
           <Card className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Review</h2>
+              <h2 className="text-lg font-semibold text-white">Xem lại</h2>
               {set.mode === 'exam' && (
                 <span className="text-xs text-slate-500">
-                  Correct answers hidden (exam mode)
+                  Đáp án được ẩn (chế độ kiểm tra)
                 </span>
               )}
             </div>
@@ -589,7 +597,7 @@ export default function QuizPlayerPage() {
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-medium text-white">
                       {r.correct ? '✅' : '❌'} {i + 1}.{' '}
-                      <MathText text={question?.question ?? 'Question'} />
+                      <MathText text={question?.question ?? 'Câu hỏi'} />
                       {r.correct && (
                         <span className="ml-2 text-xs font-semibold text-amber-300">
                           +{r.xpEarned} XP
@@ -599,21 +607,21 @@ export default function QuizPlayerPage() {
                     <button
                       type="button"
                       onClick={() => void toggleFavorite(r.exerciseId)}
-                      title={isFavorite ? 'Remove from saved' : 'Save question'}
+                      title={isFavorite ? 'Bỏ lưu' : 'Lưu câu hỏi'}
                       className="shrink-0 text-lg transition-transform hover:scale-125"
                     >
                       {isFavorite ? '⭐' : '☆'}
                     </button>
                   </div>
                   <p className="mt-1 text-xs text-slate-300">
-                    Your answer:{' '}
+                    Câu trả lời của bạn:{' '}
                     <MathText
-                      text={r.yourAnswer || '(no answer)'}
+                      text={r.yourAnswer || '(chưa trả lời)'}
                       className={r.correct ? 'text-green-300' : 'text-red-300'}
                     />
                     {!r.correct && r.correctAnswer !== null && (
                       <>
-                        {' · Correct: '}
+                        {' · Đáp án: '}
                         <MathText text={r.correctAnswer} className="text-green-300" />
                       </>
                     )}
@@ -627,16 +635,19 @@ export default function QuizPlayerPage() {
         {leaderboard.length > 0 && (
           <motion.div variants={fadeSlideUp}>
             <Card className="space-y-3">
-              <h2 className="text-lg font-semibold text-white">🏆 Leaderboard</h2>
+              <h2 className="text-lg font-semibold text-white">🏆 Bảng xếp hạng</h2>
               <div className="space-y-2">
                 {leaderboard.slice(0, 10).map((entry) => (
                   <div
                     key={entry.userId}
                     className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-2"
                   >
-                    <span className="text-sm text-slate-200">
-                      <span className="mr-3 font-bold text-white">#{entry.rank}</span>
-                      {entry.username}
+                    <span className="flex min-w-0 items-center gap-2 text-sm text-slate-200">
+                      <span className="w-7 shrink-0 font-bold text-white">
+                        #{entry.rank}
+                      </span>
+                      <Avatar id={entry.avatar} size={26} />
+                      <span className="truncate">{entry.username}</span>
                     </span>
                     <span className="text-sm font-semibold text-white">
                       {entry.score}{' '}
@@ -666,9 +677,9 @@ export default function QuizPlayerPage() {
 
       <div className="flex items-center justify-between gap-3 text-sm text-slate-400">
         <span>
-          Question {index + 1} of {questions.length}
+          Câu {index + 1}/{questions.length}
           {resumed && index > 0 && (
-            <span className="ml-2 text-xs text-indigo-300">resumed</span>
+            <span className="ml-2 text-xs text-indigo-300">đã tiếp tục</span>
           )}
         </span>
         <span className="flex items-center gap-2">
@@ -693,7 +704,7 @@ export default function QuizPlayerPage() {
                   : 'border-white/15 bg-white/5 text-slate-200'
               }`}
             >
-              ⏱️ {secondsLeft}s
+              ⏱️ {secondsLeft} giây
             </motion.span>
           )}
         </span>
@@ -738,7 +749,7 @@ export default function QuizPlayerPage() {
                     value={textAnswer}
                     onChange={(e) => setTextAnswer(e.target.value)}
                     disabled={phase === 'submitting' || feedback !== null}
-                    placeholder="Type your answer…"
+                    placeholder="Nhập câu trả lời…"
                     className="input-base px-4 py-3"
                   />
                   {isPractice && feedback === null && (
@@ -747,7 +758,7 @@ export default function QuizPlayerPage() {
                       onClick={() => void runCheck(textAnswer)}
                       disabled={!hasAnswer || checking}
                     >
-                      {checking ? 'Checking…' : 'Check answer'}
+                      {checking ? 'Đang kiểm tra…' : 'Kiểm tra đáp án'}
                     </Button>
                   )}
                   {feedback !== null && (
@@ -761,10 +772,10 @@ export default function QuizPlayerPage() {
                           : 'border-red-400/40 bg-red-500/10 text-red-300'
                       }`}
                     >
-                      {feedback.correct ? 'Correct! 🎉' : 'Not quite.'}
+                      {feedback.correct ? 'Chính xác! 🎉' : 'Chưa đúng.'}
                       {!feedback.correct && feedback.correctAnswer !== null && (
                         <span className="ml-1 text-slate-300">
-                          Answer:{' '}
+                          Đáp án:{' '}
                           <MathText
                             text={feedback.correctAnswer}
                             className="font-semibold text-green-300"
@@ -784,10 +795,10 @@ export default function QuizPlayerPage() {
                 className="w-full"
               >
                 {phase === 'submitting'
-                  ? 'Submitting…'
+                  ? 'Đang nộp bài…'
                   : index + 1 >= questions.length
-                    ? 'Finish quiz'
-                    : 'Next →'}
+                    ? 'Hoàn thành'
+                    : 'Tiếp theo →'}
               </Button>
             </Card>
           </motion.div>

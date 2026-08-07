@@ -52,7 +52,7 @@ export class AttemptsController {
       throw new HttpException(
         errorEnvelope(
           'VALIDATION_ERROR',
-          'exerciseId, topic, and answer are required.',
+          'exerciseId, topic và answer là bắt buộc.',
         ),
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
@@ -67,7 +67,7 @@ export class AttemptsController {
       throw new HttpException(
         errorEnvelope(
           'EXERCISE_NOT_FOUND',
-          'Exercise does not exist in this topic.',
+          'Bài tập không tồn tại trong chủ đề này.',
         ),
         HttpStatus.NOT_FOUND,
       );

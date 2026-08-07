@@ -24,10 +24,18 @@ function getToken(): string | null {
   return localStorage.getItem('token');
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function requestFull<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<{ data: T; meta: Record<string, unknown> }> {
   const token = getToken();
+  // A FormData body (file uploads) must NOT get a hand-set Content-Type —
+  // the browser derives the multipart boundary itself only when it's left
+  // alone. Every existing JSON call site sends a string body (or none), so
+  // this never changes behavior for them.
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string> | undefined),
   };
 
@@ -51,7 +59,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   };
 
   if (res.ok && parsed.success === true) {
-    return parsed.data as T;
+    return { data: parsed.data as T, meta: parsed.meta ?? {} };
   }
 
   // Covers three shapes: our own {success:false, error:{message}} envelope,
@@ -62,13 +70,25 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const message =
     parsed.error?.message ??
     (typeof parsed.message === 'string' ? parsed.message : null) ??
-    `Request failed (HTTP ${res.status}).`;
+    `Yêu cầu thất bại (HTTP ${res.status}).`;
 
   throw new Error(message);
 }
 
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  return (await requestFull<T>(path, options)).data;
+}
+
 export function apiGet<T>(path: string): Promise<T> {
   return request<T>(path, { method: 'GET' });
+}
+
+// Like apiGet, but also surfaces the response envelope's `meta` (pagination
+// flags, counts, etc) instead of discarding it.
+export function apiGetWithMeta<T>(
+  path: string,
+): Promise<{ data: T; meta: Record<string, unknown> }> {
+  return requestFull<T>(path, { method: 'GET' });
 }
 
 export function apiPost<T>(path: string, body: unknown): Promise<T> {
@@ -81,4 +101,17 @@ export function apiPatch<T>(path: string, body: unknown): Promise<T> {
 
 export function apiDelete<T>(path: string): Promise<T> {
   return request<T>(path, { method: 'DELETE' });
+}
+
+// Multipart upload (forum image posts/answers, Excel exercise import).
+export function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  return request<T>(path, { method: 'POST', body: form });
+}
+
+// Resolves a backend-relative path (e.g. "/uploads/forum/xyz.jpg") to a full
+// URL against the API origin. Already-absolute URLs pass through unchanged
+// (future cloud-storage URLs will be absolute).
+export function resolveImageUrl(path: string): string {
+  if (/^https?:\/\//.test(path)) return path;
+  return `${API_URL}${path}`;
 }

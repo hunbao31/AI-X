@@ -61,6 +61,10 @@ export interface Sounds {
   playHover: () => void;
   /** Quick swoosh — question transitions. */
   playWhoosh: () => void;
+  /** Soft single pop — content created (forum post published). */
+  playPop: () => void;
+  /** Short coin-like chime — a small XP reward (upvote received, etc). */
+  playReward: () => void;
   /** Rising major arpeggio — correct answer. */
   playCorrect: () => void;
   /** Low descending buzz — wrong answer. */
@@ -91,6 +95,19 @@ function buildSounds(): Sounds {
       if (!ctx) return;
       tone(ctx, { freq: 720, at: 0, duration: 0.14, glideTo: 220, type: 'triangle', peak: 0.035 });
       tone(ctx, { freq: 520, at: 0.02, duration: 0.12, glideTo: 180, type: 'sine', peak: 0.025 });
+    },
+
+    playPop: () => {
+      const ctx = getContext();
+      if (!ctx) return;
+      tone(ctx, { freq: 660, at: 0, duration: 0.09, glideTo: 880, peak: 0.045 });
+    },
+
+    playReward: () => {
+      const ctx = getContext();
+      if (!ctx) return;
+      tone(ctx, { freq: 880, at: 0, duration: 0.1, type: 'triangle', peak: 0.05 });
+      tone(ctx, { freq: 1318.5, at: 0.07, duration: 0.16, type: 'triangle', peak: 0.055 });
     },
 
     playRankUp: () => {

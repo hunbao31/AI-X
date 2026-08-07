@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { Avatar } from '@/components/ui/Avatar';
 import { staggerContainer, fadeSlideUp, springSmooth } from '@/lib/animations';
 import type { XpLeaderboardEntry } from '@/lib/types';
 
@@ -23,7 +24,7 @@ export function XpLeaderboard({
   if (entries.length === 0) {
     return (
       <p className="text-sm text-slate-400">
-        No scores yet — be the first on the board!
+        Chưa có điểm số nào — hãy là người đầu tiên trên bảng xếp hạng!
       </p>
     );
   }
@@ -53,16 +54,17 @@ export function XpLeaderboard({
               <span className="w-8 shrink-0 font-bold text-white">
                 {entry.rank <= 3 ? MEDALS[entry.rank - 1] : `#${entry.rank}`}
               </span>
+              <Avatar id={entry.avatar} size={compact ? 26 : 32} />
               <span className="truncate font-medium">
                 {entry.username}
-                {isSelf && <span className="ml-2 text-xs text-indigo-300">you</span>}
+                {isSelf && <span className="ml-2 text-xs text-indigo-300">bạn</span>}
               </span>
             </span>
             <span className="shrink-0 text-sm font-semibold text-white">
               {entry.xp} XP
               {!compact && (
                 <span className="ml-2 font-normal text-slate-400">
-                  · Lv {entry.level} · 🔥 {entry.streak}
+                  · Cấp {entry.level} · 🔥 {entry.streak}
                 </span>
               )}
             </span>

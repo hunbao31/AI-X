@@ -5,11 +5,13 @@ import {
   CreateExerciseDto,
   UpdateExerciseDto,
   ImportExercisesDto,
+  ImportExcelDto,
   ExerciseFilters,
   ExerciseType,
   Difficulty,
 } from './dto/create-exercise.dto';
-import { parseQuestionRows } from './csv-import';
+import { parseQuestionRows, parseQuestionRowsFromCells, ParseResult } from './csv-import';
+import { parseExcelToRows } from './excel-import';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { apiError } from '../common/api-envelope';
 
@@ -49,21 +51,21 @@ function validateCandidate(candidate: ExerciseCandidate): void {
   if (!candidate.question?.trim() || !candidate.answer?.trim() || !candidate.topic?.trim()) {
     throw apiError(
       'VALIDATION_ERROR',
-      'question, answer, and topic are required.',
+      'Câu hỏi, đáp án và chủ đề là bắt buộc.',
       HttpStatus.UNPROCESSABLE_ENTITY,
     );
   }
   if (!VALID_TYPES.includes(candidate.type)) {
     throw apiError(
       'VALIDATION_ERROR',
-      'type must be "mcq" or "text".',
+      'Loại câu hỏi phải là "mcq" hoặc "text".',
       HttpStatus.UNPROCESSABLE_ENTITY,
     );
   }
   if (!VALID_DIFFICULTIES.includes(candidate.difficulty)) {
     throw apiError(
       'VALIDATION_ERROR',
-      'difficulty must be "easy", "medium", or "hard".',
+      'Độ khó phải là "easy", "medium" hoặc "hard".',
       HttpStatus.UNPROCESSABLE_ENTITY,
     );
   }
@@ -71,14 +73,14 @@ function validateCandidate(candidate: ExerciseCandidate): void {
     if (!Array.isArray(candidate.options) || candidate.options.length < 2) {
       throw apiError(
         'VALIDATION_ERROR',
-        'options (at least 2) are required when type is "mcq".',
+        'Cần ít nhất 2 lựa chọn khi loại câu hỏi là "mcq".',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
     if (!candidate.options.includes(candidate.answer)) {
       throw apiError(
         'VALIDATION_ERROR',
-        'answer must be one of the options.',
+        'Đáp án phải là một trong các lựa chọn.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -86,7 +88,7 @@ function validateCandidate(candidate: ExerciseCandidate): void {
   if (candidate.type === 'text' && candidate.options != null) {
     throw apiError(
       'VALIDATION_ERROR',
-      'options must be omitted when type is "text".',
+      'Không được có lựa chọn khi loại câu hỏi là "text".',
       HttpStatus.UNPROCESSABLE_ENTITY,
     );
   }
@@ -107,12 +109,12 @@ export class ExercisesService {
       include: { class: { select: { teacherId: true } } },
     });
     if (!topic) {
-      throw apiError('TOPIC_NOT_FOUND', 'Topic does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('TOPIC_NOT_FOUND', 'Chủ đề không tồn tại.', HttpStatus.NOT_FOUND);
     }
     if (user.role !== 'admin' && topic.class.teacherId !== user.sub) {
       throw apiError(
         'FORBIDDEN',
-        'Only the class teacher can attach exercises to this topic.',
+        'Chỉ giáo viên của lớp học mới có thể gắn bài tập vào chủ đề này.',
         HttpStatus.FORBIDDEN,
       );
     }
@@ -154,20 +156,13 @@ export class ExercisesService {
     });
   }
 
-  // Bulk CSV import. Row validation lives in csv-import.ts; invalid rows are
-  // skipped and reported, valid rows are inserted in one createMany.
-  async import(dto: ImportExercisesDto, user: AuthenticatedUser) {
-    if (typeof dto?.csv !== 'string' || dto.csv.trim() === '') {
-      throw apiError(
-        'VALIDATION_ERROR',
-        'csv content is required.',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
-    }
-
-    // Import-wide destination. When a class topic is linked, every row lands
-    // there; otherwise each row may carry its own topic column, with the
-    // import-wide label as fallback.
+  // Import-wide destination. When a class topic is linked, every row lands
+  // there; otherwise each row may carry its own topic column, with the
+  // import-wide label as fallback.
+  private async resolveImportTopic(
+    dto: { topic?: string; topicId?: string | null },
+    user: AuthenticatedUser,
+  ): Promise<{ topicId: string | null; importTopicLabel: string }> {
     let importTopicLabel = dto.topic?.trim() ?? '';
     let topicId: string | null = null;
     if (dto.topicId) {
@@ -175,19 +170,24 @@ export class ExercisesService {
       topicId = link.topicId;
       importTopicLabel = link.topicName;
     }
+    return { topicId, importTopicLabel };
+  }
 
-    const defaultDifficulty: Difficulty = ['easy', 'medium', 'hard'].includes(
-      dto.difficulty as Difficulty,
-    )
-      ? (dto.difficulty as Difficulty)
-      : 'easy';
-
-    const { questions, errors } = parseQuestionRows(dto.csv, defaultDifficulty);
+  // Shared tail of both import paths (CSV text and Excel) once each has
+  // produced the same ParseResult shape — row validation already happened
+  // upstream (csv-import.ts), this only resolves per-row topic + inserts.
+  private async finalizeImport(
+    parsed: ParseResult,
+    topicId: string | null,
+    importTopicLabel: string,
+    user: AuthenticatedUser,
+  ) {
+    const { questions, errors } = parsed;
 
     if (questions.length > MAX_IMPORT_ROWS) {
       throw apiError(
         'IMPORT_TOO_LARGE',
-        `Import at most ${MAX_IMPORT_ROWS} questions per file.`,
+        `Chỉ được nhập tối đa ${MAX_IMPORT_ROWS} câu hỏi mỗi tệp.`,
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -209,7 +209,7 @@ export class ExercisesService {
       if (!label) {
         errors.push({
           row: i + 1,
-          reason: 'Missing topic — add a topic column or pick one for the import.',
+          reason: 'Thiếu chủ đề — thêm cột chủ đề hoặc chọn một chủ đề cho lần nhập này.',
         });
         return;
       }
@@ -234,8 +234,52 @@ export class ExercisesService {
     return {
       created: rows.length,
       failed: errors.length,
-      errors: errors.map((e) => `Row ${e.row}: ${e.reason}`),
+      errors: errors.map((e) => `Dòng ${e.row}: ${e.reason}`),
     };
+  }
+
+  private resolveDefaultDifficulty(difficulty: unknown): Difficulty {
+    return ['easy', 'medium', 'hard'].includes(difficulty as Difficulty)
+      ? (difficulty as Difficulty)
+      : 'easy';
+  }
+
+  // Bulk CSV import. Row validation lives in csv-import.ts; invalid rows are
+  // skipped and reported, valid rows are inserted in one createMany.
+  async import(dto: ImportExercisesDto, user: AuthenticatedUser) {
+    if (typeof dto?.csv !== 'string' || dto.csv.trim() === '') {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'Nội dung CSV là bắt buộc.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const { topicId, importTopicLabel } = await this.resolveImportTopic(dto, user);
+    const defaultDifficulty = this.resolveDefaultDifficulty(dto.difficulty);
+    const parsed = parseQuestionRows(dto.csv, defaultDifficulty);
+
+    return this.finalizeImport(parsed, topicId, importTopicLabel, user);
+  }
+
+  // Bulk Excel (.xlsx) import — same column layout and downstream validation
+  // as CSV, only the row source differs (excel-import.ts vs csv-import.ts's
+  // parseCsv).
+  async importExcel(buffer: Buffer, dto: ImportExcelDto, user: AuthenticatedUser) {
+    const cells = await parseExcelToRows(buffer);
+    if (cells.length === 0) {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'Tệp Excel không có dữ liệu.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const { topicId, importTopicLabel } = await this.resolveImportTopic(dto, user);
+    const defaultDifficulty = this.resolveDefaultDifficulty(dto.difficulty);
+    const parsed = parseQuestionRowsFromCells(cells, defaultDifficulty);
+
+    return this.finalizeImport(parsed, topicId, importTopicLabel, user);
   }
 
   // Random question picker for quick-start and auto-generated quizzes.
@@ -284,12 +328,12 @@ export class ExercisesService {
   async update(id: string, dto: UpdateExerciseDto, user: AuthenticatedUser) {
     const existing = await this.prisma.exercise.findUnique({ where: { id } });
     if (!existing) {
-      throw apiError('EXERCISE_NOT_FOUND', 'Exercise does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('EXERCISE_NOT_FOUND', 'Bài tập không tồn tại.', HttpStatus.NOT_FOUND);
     }
     if (user.role !== 'admin' && existing.createdBy !== user.sub) {
       throw apiError(
         'FORBIDDEN',
-        'You can only edit exercises you created.',
+        'Bạn chỉ có thể chỉnh sửa bài tập do mình tạo.',
         HttpStatus.FORBIDDEN,
       );
     }
@@ -348,6 +392,7 @@ export class ExercisesService {
   async findAll(filters: ExerciseFilters = {}) {
     try {
       const clauses: Prisma.ExerciseWhereInput[] = [];
+      if (filters.createdBy) clauses.push({ createdBy: filters.createdBy });
       if (filters.topic?.trim()) clauses.push({ topic: filters.topic });
       if (filters.topicId?.trim()) clauses.push({ topicId: filters.topicId });
       if (
@@ -406,12 +451,12 @@ export class ExercisesService {
   async remove(id: string, user: AuthenticatedUser) {
     const existing = await this.prisma.exercise.findUnique({ where: { id } });
     if (!existing) {
-      throw apiError('EXERCISE_NOT_FOUND', 'Exercise does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('EXERCISE_NOT_FOUND', 'Bài tập không tồn tại.', HttpStatus.NOT_FOUND);
     }
     if (user.role !== 'admin' && existing.createdBy !== user.sub) {
       throw apiError(
         'FORBIDDEN',
-        'You can only delete exercises you created.',
+        'Bạn chỉ có thể xóa bài tập do mình tạo.',
         HttpStatus.FORBIDDEN,
       );
     }

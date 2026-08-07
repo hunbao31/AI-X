@@ -14,9 +14,25 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Avatar } from '@/components/ui/Avatar';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DifficultyBadge } from '@/components/exercise/DifficultyBadge';
 import { MathText } from '@/components/ui/MathText';
-import type { SetDetail, Exercise, LeaderboardEntry } from '@/lib/types';
+import { QuizBuilder } from '@/components/quiz-builder/QuizBuilder';
+import type { SetDetail, SetItem, Exercise, LeaderboardEntry } from '@/lib/types';
+
+// Display-only labels for raw enum values rendered directly in JSX —
+// comparisons elsewhere stay on the original English values (e.g.
+// detail.mode === 'exam').
+const MODE_LABELS: Record<string, string> = {
+  practice: 'Luyện tập',
+  exam: 'Kiểm tra',
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  mcq: 'Trắc nghiệm',
+  text: 'Tự luận',
+};
 
 export default function TeacherSetDetailPage() {
   const params = useParams<{ id: string }>();
@@ -38,11 +54,16 @@ export default function TeacherSetDetailPage() {
   const [accessCode, setAccessCode] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [showBankPicker, setShowBankPicker] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deletingSet, setDeletingSet] = useState(false);
 
   const load = useCallback(() => {
     Promise.all([
       apiGet<SetDetail>(`/api/v1/sets/${setId}`),
-      apiGet<Exercise[]>('/api/v1/exercises'),
+      // Personal bank — only questions this teacher authored, not the old
+      // messy "everyone's exercises" pool.
+      apiGet<Exercise[]>('/api/v1/exercises/mine'),
       apiGet<LeaderboardEntry[]>(`/api/v1/sets/${setId}/leaderboard`),
     ])
       .then(([loadedDetail, exerciseList, entries]) => {
@@ -55,7 +76,7 @@ export default function TeacherSetDetailPage() {
         setAccessCode(loadedDetail.accessCode ?? '');
       })
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Failed to load quiz set.'),
+        setError(err instanceof Error ? err.message : 'Không thể tải bộ đề.'),
       )
       .finally(() => setLoading(false));
   }, [setId]);
@@ -68,17 +89,7 @@ export default function TeacherSetDetailPage() {
       await apiPost(`/api/v1/sets/${setId}/add-exercise`, { exerciseId });
       load();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to add exercise.');
-    }
-  }
-
-  async function removeExercise(exerciseId: string) {
-    setActionError('');
-    try {
-      await apiDelete(`/api/v1/sets/${setId}/exercises/${exerciseId}`);
-      load();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to remove exercise.');
+      setActionError(err instanceof Error ? err.message : 'Không thể thêm bài tập.');
     }
   }
 
@@ -90,7 +101,7 @@ export default function TeacherSetDetailPage() {
       await apiPatch(`/api/v1/sets/${setId}`, { isPublic: !detail.isPublic });
       load();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to update set.');
+      setActionError(err instanceof Error ? err.message : 'Không thể cập nhật bộ đề.');
     } finally {
       setSavingPublic(false);
     }
@@ -105,7 +116,7 @@ export default function TeacherSetDetailPage() {
       });
       load();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to update set.');
+      setActionError(err instanceof Error ? err.message : 'Không thể cập nhật bộ đề.');
     }
   }
 
@@ -116,7 +127,7 @@ export default function TeacherSetDetailPage() {
       await apiPatch(`/api/v1/sets/${setId}`, { isPublished: !detail.isPublished });
       load();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to update set.');
+      setActionError(err instanceof Error ? err.message : 'Không thể cập nhật bộ đề.');
     }
   }
 
@@ -133,9 +144,28 @@ export default function TeacherSetDetailPage() {
       });
       load();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to save settings.');
+      setActionError(err instanceof Error ? err.message : 'Không thể lưu cài đặt.');
     } finally {
       setSavingSettings(false);
+    }
+  }
+
+  // QuizBuilder owns question CRUD itself; this just keeps the page's
+  // `detail` state (questionCount + items) in sync after each change.
+  function updateItems(next: SetItem[]) {
+    setDetail((prev) => (prev ? { ...prev, items: next, questionCount: next.length } : prev));
+  }
+
+  async function handleDeleteSet() {
+    setDeletingSet(true);
+    setActionError('');
+    try {
+      await apiDelete(`/api/v1/sets/${setId}`);
+      router.push('/teacher/sets');
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Không thể xóa bộ đề.');
+      setDeletingSet(false);
+      setConfirmingDelete(false);
     }
   }
 
@@ -146,7 +176,7 @@ export default function TeacherSetDetailPage() {
       const copy = await apiPost<{ id: string }>(`/api/v1/sets/${setId}/duplicate`, {});
       router.push(`/teacher/sets/${copy.id}`);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to duplicate.');
+      setActionError(err instanceof Error ? err.message : 'Không thể nhân bản.');
       setDuplicating(false);
     }
   }
@@ -158,7 +188,7 @@ export default function TeacherSetDetailPage() {
       const res = await fetch(`${API_BASE_URL}/api/v1/sets/${setId}/export`, {
         headers: { Authorization: `Bearer ${getAuthToken() ?? ''}` },
       });
-      if (!res.ok) throw new Error(`Export failed (HTTP ${res.status}).`);
+      if (!res.ok) throw new Error(`Xuất thất bại (HTTP ${res.status}).`);
       const text = await res.text();
       const blob = new Blob([text], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -168,21 +198,21 @@ export default function TeacherSetDetailPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to export.');
+      setActionError(err instanceof Error ? err.message : 'Không thể xuất.');
     }
   }
 
-  if (loading) return <p className="text-slate-400">Loading quiz set…</p>;
+  if (loading) return <p className="text-slate-400">Đang tải bộ đề…</p>;
 
   if (error || !detail) {
     return (
       <Card className="mx-auto max-w-3xl">
-        <p className="text-red-400">{error || 'Quiz set not found.'}</p>
+        <p className="text-red-400">{error || 'Không tìm thấy bộ đề.'}</p>
         <Link
           href="/teacher/sets"
           className="mt-4 inline-block text-sm text-indigo-300 hover:text-indigo-200"
         >
-          ← Back to quiz sets
+          ← Quay lại danh sách bộ đề
         </Link>
       </Card>
     );
@@ -197,7 +227,7 @@ export default function TeacherSetDetailPage() {
         href="/teacher/sets"
         className="text-xs font-medium uppercase tracking-wide text-slate-400 hover:text-slate-200"
       >
-        ← All quiz sets
+        ← Tất cả bộ đề
       </Link>
 
       <Card className="space-y-3">
@@ -209,54 +239,70 @@ export default function TeacherSetDetailPage() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {!detail.isPublished && <Badge tone="yellow">draft</Badge>}
-            <Badge tone={detail.mode === 'exam' ? 'red' : 'green'}>{detail.mode}</Badge>
+            {!detail.isPublished && <Badge tone="yellow">bản nháp</Badge>}
+            <Badge tone={detail.mode === 'exam' ? 'red' : 'green'}>
+              {MODE_LABELS[detail.mode] ?? detail.mode}
+            </Badge>
             {detail.isPublic ? (
-              <Badge tone="green">public</Badge>
+              <Badge tone="green">công khai</Badge>
             ) : detail.class ? (
               <Badge tone="indigo">{detail.class.name}</Badge>
             ) : detail.hasAccessCode ? (
-              <Badge tone="yellow">code</Badge>
+              <Badge tone="yellow">có mã</Badge>
             ) : (
-              <Badge>private</Badge>
+              <Badge>riêng tư</Badge>
             )}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm text-slate-400">
-          <span>📋 {detail.questionCount} questions</span>
+          <span>📋 {detail.questionCount} câu hỏi</span>
           <span>
             {detail.timeLimitPerQuestion
-              ? `⏱️ ${detail.timeLimitPerQuestion}s per question`
-              : '⏱️ untimed'}
+              ? `⏱️ ${detail.timeLimitPerQuestion} giây mỗi câu`
+              : '⏱️ không giới hạn thời gian'}
           </span>
           <Button variant="secondary" onClick={togglePublic} disabled={savingPublic}>
             {savingPublic
-              ? 'Saving…'
+              ? 'Đang lưu…'
               : detail.isPublic
-                ? 'Make private'
-                : 'Make public'}
+                ? 'Chuyển sang riêng tư'
+                : 'Chuyển sang công khai'}
           </Button>
           <Button variant="secondary" onClick={toggleMode}>
-            {detail.mode === 'practice' ? 'Switch to exam' : 'Switch to practice'}
+            {detail.mode === 'practice' ? 'Chuyển sang chế độ kiểm tra' : 'Chuyển sang chế độ luyện tập'}
           </Button>
           <Button variant="secondary" onClick={togglePublished}>
-            {detail.isPublished ? 'Unpublish (draft)' : 'Publish'}
+            {detail.isPublished ? 'Hủy xuất bản (bản nháp)' : 'Xuất bản'}
           </Button>
           <Button variant="secondary" onClick={handleDuplicate} disabled={duplicating}>
-            {duplicating ? 'Duplicating…' : '⧉ Duplicate'}
+            {duplicating ? 'Đang nhân bản…' : '⧉ Nhân bản'}
           </Button>
           <Button variant="secondary" onClick={handleExport}>
-            ⬇ Export CSV
+            ⬇ Xuất CSV
           </Button>
           <Link href={`/quiz/${detail.id}`}>
-            <Button variant="ghost">Preview as student →</Button>
+            <Button variant="ghost">Xem trước như học sinh →</Button>
           </Link>
+          <Button variant="danger" onClick={() => setConfirmingDelete(true)}>
+            🗑 Xóa bộ đề
+          </Button>
         </div>
         {actionError && <p className="text-sm text-red-400">{actionError}</p>}
       </Card>
 
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="Xóa bộ đề này?"
+        message={`"${detail.title}" sẽ bị xóa vĩnh viễn. Các câu hỏi của bạn vẫn được giữ trong ngân hàng câu hỏi cá nhân — chỉ bộ đề này bị xóa. Hành động này không thể hoàn tác.`}
+        confirmLabel="Xóa bộ đề"
+        danger
+        busy={deletingSet}
+        onConfirm={handleDeleteSet}
+        onCancel={() => setConfirmingDelete(false)}
+      />
+
       <Card className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">Quiz settings</h2>
+        <h2 className="text-lg font-semibold text-white">Cài đặt bộ đề</h2>
         <form onSubmit={saveSettings} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-slate-300">
@@ -266,7 +312,7 @@ export default function TeacherSetDetailPage() {
                 onChange={(e) => setShuffleQuestions(e.target.checked)}
                 className="h-4 w-4 accent-indigo-500"
               />
-              🔀 Shuffle question order
+              🔀 Xáo trộn thứ tự câu hỏi
             </label>
             <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-slate-300">
               <input
@@ -275,11 +321,11 @@ export default function TeacherSetDetailPage() {
                 onChange={(e) => setShuffleAnswers(e.target.checked)}
                 className="h-4 w-4 accent-indigo-500"
               />
-              🔀 Shuffle answer order
+              🔀 Xáo trộn thứ tự đáp án
             </label>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-300">
-                Full quiz time limit (seconds)
+                Giới hạn thời gian toàn bộ bài (giây)
               </label>
               <input
                 type="number"
@@ -287,20 +333,20 @@ export default function TeacherSetDetailPage() {
                 max={7200}
                 value={totalTime}
                 onChange={(e) => setTotalTime(e.target.value)}
-                placeholder="No total limit"
+                placeholder="Không giới hạn tổng thời gian"
                 className="input-base"
               />
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-300">
-                Access code{' '}
-                <span className="text-slate-500">(private exam via code)</span>
+                Mã truy cập{' '}
+                <span className="text-slate-500">(bài kiểm tra riêng tư qua mã)</span>
               </label>
               <input
                 type="text"
                 value={accessCode}
                 onChange={(e) => setAccessCode(e.target.value)}
-                placeholder="Empty = no code"
+                placeholder="Để trống = không có mã"
                 minLength={4}
                 maxLength={32}
                 className="input-base"
@@ -308,57 +354,39 @@ export default function TeacherSetDetailPage() {
             </div>
           </div>
           <Button type="submit" disabled={savingSettings}>
-            {savingSettings ? 'Saving…' : 'Save settings'}
+            {savingSettings ? 'Đang lưu…' : 'Lưu cài đặt'}
           </Button>
         </form>
       </Card>
 
-      <Card className="space-y-3">
-        <h2 className="text-lg font-semibold text-white">Questions in this set</h2>
-        {!detail.items || detail.items.length === 0 ? (
-          <p className="text-sm text-slate-400">
-            No questions yet — add some from your exercise bank below.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {detail.items.map((item, i) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 p-3"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-white">
-                    {i + 1}. <MathText text={item.exercise.question} />
-                  </p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Badge tone="indigo">{item.exercise.type.toUpperCase()}</Badge>
-                    <DifficultyBadge difficulty={item.exercise.difficulty} />
-                    <span className="text-xs text-slate-400">{item.exercise.topic}</span>
-                  </div>
-                </div>
-                <Button variant="danger" onClick={() => removeExercise(item.exerciseId)}>
-                  Remove
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
+      <Card className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">Câu hỏi</h2>
+          <span className="text-xs text-slate-500">
+            {detail.questionCount} câu hỏi
+          </span>
+        </div>
+        <QuizBuilder setId={setId} items={detail.items ?? []} onItemsChange={updateItems} />
       </Card>
 
       <Card className="space-y-3">
-        <h2 className="text-lg font-semibold text-white">Add from your exercise bank</h2>
-        {addable.length === 0 ? (
-          <p className="text-sm text-slate-400">
-            Every existing exercise is already in this set —{' '}
-            <Link
-              href="/teacher/create"
-              className="text-indigo-300 hover:text-indigo-200"
-            >
-              create a new one
-            </Link>
-            .
-          </p>
-        ) : (
+        <button
+          type="button"
+          onClick={() => setShowBankPicker((v) => !v)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+            {showBankPicker ? '▾' : '▸'} Dùng lại từ ngân hàng câu hỏi của tôi
+          </h2>
+          <span className="text-xs text-slate-500">không bắt buộc</span>
+        </button>
+        {showBankPicker &&
+          (addable.length === 0 ? (
+            <p className="text-sm text-slate-400">
+              Không còn gì khác trong ngân hàng cá nhân để thêm — mọi thứ đã
+              có ở đây, hoặc bạn chưa soạn câu hỏi nào khác.
+            </p>
+          ) : (
           <div className="space-y-2">
             {addable.map((ex) => (
               <div
@@ -370,32 +398,35 @@ export default function TeacherSetDetailPage() {
                     <MathText text={ex.question} />
                   </p>
                   <div className="mt-1 flex items-center gap-2">
-                    <Badge tone="indigo">{ex.type.toUpperCase()}</Badge>
+                    <Badge tone="indigo">{TYPE_LABELS[ex.type] ?? ex.type.toUpperCase()}</Badge>
                     <DifficultyBadge difficulty={ex.difficulty} />
                     <span className="text-xs text-slate-400">{ex.topic}</span>
                   </div>
                 </div>
                 <Button variant="secondary" onClick={() => addExercise(ex.id)}>
-                  + Add
+                  + Thêm
                 </Button>
               </div>
             ))}
           </div>
-        )}
+          ))}
       </Card>
 
       {leaderboard.length > 0 && (
         <Card className="space-y-3">
-          <h2 className="text-lg font-semibold text-white">🏆 Leaderboard</h2>
+          <h2 className="text-lg font-semibold text-white">🏆 Bảng xếp hạng</h2>
           <div className="space-y-2">
             {leaderboard.slice(0, 10).map((entry) => (
               <div
                 key={entry.userId}
                 className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-2"
               >
-                <span className="text-sm text-slate-200">
-                  <span className="mr-3 font-bold text-white">#{entry.rank}</span>
-                  {entry.username}
+                <span className="flex min-w-0 items-center gap-2 text-sm text-slate-200">
+                  <span className="w-7 shrink-0 font-bold text-white">
+                    #{entry.rank}
+                  </span>
+                  <Avatar id={entry.avatar} size={26} />
+                  <span className="truncate">{entry.username}</span>
                 </span>
                 <span className="text-sm font-semibold text-white">
                   {entry.score}{' '}

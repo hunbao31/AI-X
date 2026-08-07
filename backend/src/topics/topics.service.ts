@@ -15,7 +15,7 @@ export class TopicsService {
     if (!name?.trim() || !classId?.trim()) {
       throw apiError(
         'VALIDATION_ERROR',
-        'name and classId are required.',
+        'name và classId là bắt buộc.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -28,7 +28,7 @@ export class TopicsService {
     if (existing) {
       throw apiError(
         'TOPIC_ALREADY_EXISTS',
-        'This class already has a topic with that name.',
+        'Lớp học này đã có một chủ đề với tên đó.',
         HttpStatus.CONFLICT,
       );
     }
@@ -43,7 +43,7 @@ export class TopicsService {
     if (!classId?.trim()) {
       throw apiError(
         'VALIDATION_ERROR',
-        'classId query parameter is required.',
+        'Tham số classId là bắt buộc.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }

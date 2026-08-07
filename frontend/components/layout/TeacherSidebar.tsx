@@ -13,7 +13,7 @@ export function TeacherSidebar() {
         EduAI
       </div>
       <span className="mb-4 px-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
-        Teacher
+        Giáo viên
       </span>
       <nav className="flex flex-col gap-1">
         {TEACHER_NAV.map((item) => {

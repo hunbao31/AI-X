@@ -22,15 +22,15 @@ export function evaluateAnswer(
     return {
       correct: true,
       understandingLevel: 'HIGH',
-      explanation: 'Correct reasoning.',
-      suggestion: 'Try harder problems.',
+      explanation: 'Lập luận chính xác.',
+      suggestion: 'Hãy thử sức với các bài khó hơn.',
     };
   }
 
   return {
     correct: false,
     understandingLevel: 'LOW',
-    explanation: 'You misunderstood basic algebra.',
-    suggestion: 'Review solving linear equations.',
+    explanation: 'Bạn đã hiểu sai kiến thức đại số cơ bản.',
+    suggestion: 'Hãy ôn lại cách giải phương trình bậc nhất.',
   };
 }

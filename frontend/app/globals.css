@@ -214,6 +214,11 @@ html.light .to-orange-400 {
   animation: podiumPulse 2.2s ease-in-out infinite alternate;
 }
 
+.best-answer-glow {
+  --podium-glow: rgba(74, 222, 128, 0.4); /* green — accepted forum answer */
+  animation: podiumPulse 2s ease-in-out infinite alternate;
+}
+
 @keyframes mascotGlow {
   from {
     box-shadow: 0 0 14px 2px rgba(251, 191, 36, 0.35);
@@ -258,7 +263,7 @@ html.light .backdrop-grid {
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
   color: #1a1a1a;
   background: #fafafa;
 }

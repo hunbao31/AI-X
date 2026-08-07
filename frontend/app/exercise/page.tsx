@@ -30,6 +30,12 @@ interface AttemptResult {
   };
 }
 
+const UNDERSTANDING_LABEL: Record<'LOW' | 'MEDIUM' | 'HIGH', string> = {
+  LOW: 'Yếu',
+  MEDIUM: 'Khá',
+  HIGH: 'Tốt',
+};
+
 function ExercisePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -57,7 +63,7 @@ function ExercisePageInner() {
     apiGet<Exercise[]>(`/api/v1/exercises?topic=${encodeURIComponent(topic)}`)
       .then((exercises) => setExercise(exercises[0] ?? null))
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Failed to load exercise.'),
+        setError(err instanceof Error ? err.message : 'Không thể tải bài tập.'),
       )
       .finally(() => setLoading(false));
   }, [router, topic]);
@@ -77,7 +83,7 @@ function ExercisePageInner() {
       });
       setResult(attemptResult);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit answer.');
+      setError(err instanceof Error ? err.message : 'Không thể nộp câu trả lời.');
     } finally {
       setSubmitting(false);
     }
@@ -86,7 +92,7 @@ function ExercisePageInner() {
   if (loading) {
     return (
       <main className="exercise-card">
-        <p>Loading exercise…</p>
+        <p>Đang tải bài tập…</p>
       </main>
     );
   }
@@ -94,9 +100,9 @@ function ExercisePageInner() {
   if (!exercise) {
     return (
       <main className="exercise-card">
-        {error ? <p className="error-text">{error}</p> : <p>No exercise available.</p>}
+        {error ? <p className="error-text">{error}</p> : <p>Chưa có bài tập nào.</p>}
         <p className="dashboard-link">
-          <a href="/curriculum">← Browse curriculum</a>
+          <a href="/curriculum">← Xem chương trình học</a>
         </p>
       </main>
     );
@@ -105,16 +111,16 @@ function ExercisePageInner() {
   return (
     <main className="exercise-card">
       <a className="dashboard-back" href="/curriculum">
-        ← Browse curriculum
+        ← Xem chương trình học
       </a>
 
       <span className="topic-label">{topic}</span>
-      <h1>Exercise</h1>
+      <h1>Bài tập</h1>
       <p className="question-text">{exercise.question}</p>
 
       <form onSubmit={handleSubmit}>
         <div className="field">
-          <label htmlFor="answer">Your answer</label>
+          <label htmlFor="answer">Câu trả lời của bạn</label>
           <input
             id="answer"
             type="text"
@@ -126,25 +132,25 @@ function ExercisePageInner() {
         </div>
         {error && <p className="error-text">{error}</p>}
         <button type="submit" className="btn-primary" disabled={submitting || !!result}>
-          {submitting ? 'Checking…' : 'Submit'}
+          {submitting ? 'Đang kiểm tra…' : 'Nộp bài'}
         </button>
       </form>
 
       {result && (
         <div className={`result-box ${result.correct ? 'result-correct' : 'result-incorrect'}`}>
-          <p className="result-status">{result.correct ? 'Correct' : 'Incorrect'}</p>
+          <p className="result-status">{result.correct ? 'Đúng' : 'Sai'}</p>
           <p className="result-level">
-            Understanding:{' '}
+            Mức độ hiểu bài:{' '}
             <span className={`level-badge level-${result.understandingLevel.toLowerCase()}`}>
-              {result.understandingLevel}
+              {UNDERSTANDING_LABEL[result.understandingLevel]}
             </span>
           </p>
           <p className="result-explanation">{result.explanation}</p>
-          <p className="result-suggestion">Suggestion: {result.suggestion}</p>
+          <p className="result-suggestion">Gợi ý: {result.suggestion}</p>
 
           <div className="mastery-box">
             <div className="mastery-header">
-              <span>{topic} mastery</span>
+              <span>Mức độ thành thạo {topic}</span>
               <span>{result.mastery.score}/100</span>
             </div>
             <div className="mastery-bar">
@@ -154,26 +160,25 @@ function ExercisePageInner() {
               />
             </div>
             <p className="mastery-attempts">
-              {result.mastery.attempts} attempt
-              {result.mastery.attempts === 1 ? '' : 's'}
+              {result.mastery.attempts} lượt thử
             </p>
           </div>
 
           <div className="gamification-box">
             <span className="xp-gain">+{result.correct ? 10 : 3} XP</span>
             <div className="gamification-stats">
-              <span className="level-pill">Level {result.gamification.level}</span>
-              <span className="streak-pill">🔥 {result.gamification.streak}-day streak</span>
+              <span className="level-pill">Cấp độ {result.gamification.level}</span>
+              <span className="streak-pill">🔥 Chuỗi {result.gamification.streak} ngày</span>
             </div>
           </div>
 
           <div className="recommendation-box">
             <p className="recommendation-message">{result.recommendation.message}</p>
-            <p className="recommendation-action">Next: {result.recommendation.nextAction}</p>
+            <p className="recommendation-action">Tiếp theo: {result.recommendation.nextAction}</p>
           </div>
 
           <p className="dashboard-link">
-            <a href="/dashboard">View my dashboard →</a>
+            <a href="/dashboard">Xem bảng điều khiển của tôi →</a>
           </p>
         </div>
       )}
@@ -186,7 +191,7 @@ export default function ExercisePage() {
     <Suspense
       fallback={
         <main className="exercise-card">
-          <p>Loading…</p>
+          <p>Đang tải…</p>
         </main>
       }
     >

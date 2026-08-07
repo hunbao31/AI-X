@@ -26,14 +26,14 @@ const WEAK_CORRECT_RATE = 50;
 export class RecommendationService {
   getRecommendation(score: number): Recommendation {
     if (score < LOW_THRESHOLD) {
-      return { message: 'Review basics', nextAction: 'Retry this exercise' };
+      return { message: 'Ôn tập kiến thức cơ bản', nextAction: 'Làm lại bài tập này' };
     }
 
     if (score <= HIGH_THRESHOLD) {
-      return { message: 'Practice more', nextAction: 'Try a similar exercise' };
+      return { message: 'Luyện tập thêm', nextAction: 'Thử một bài tập tương tự' };
     }
 
-    return { message: 'Advance', nextAction: 'Try a harder exercise' };
+    return { message: 'Nâng cao', nextAction: 'Thử một bài tập khó hơn' };
   }
 
   // Adaptive rule: getting answers wrong (low correct rate) or low mastery
@@ -45,13 +45,13 @@ export class RecommendationService {
 
       if (item.correctRate < WEAK_CORRECT_RATE || item.masteryScore < LOW_THRESHOLD) {
         action = 'repeat';
-        message = 'You missed several questions here — repeat this topic.';
+        message = 'Bạn đã trả lời sai nhiều câu ở đây — hãy ôn lại chủ đề này.';
       } else if (item.masteryScore <= HIGH_THRESHOLD) {
         action = 'practice';
-        message = 'Solid progress — keep practicing to build mastery.';
+        message = 'Tiến bộ tốt — hãy tiếp tục luyện tập để thành thạo.';
       } else {
         action = 'advance';
-        message = 'Mastered — move on to harder material.';
+        message = 'Đã thành thạo — hãy chuyển sang nội dung khó hơn.';
       }
 
       return {

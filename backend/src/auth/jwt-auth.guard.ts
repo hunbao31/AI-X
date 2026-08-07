@@ -34,7 +34,7 @@ export class JwtAuthGuard implements CanActivate {
     const authHeader: string | undefined = request.headers['authorization'];
 
     if (!authHeader?.startsWith('Bearer ')) {
-      throw unauthorized('Missing or invalid Authorization header.');
+      throw unauthorized('Thiếu hoặc sai định dạng tiêu đề Authorization.');
     }
 
     const token = authHeader.slice('Bearer '.length);
@@ -43,7 +43,7 @@ export class JwtAuthGuard implements CanActivate {
     try {
       decoded = jwt.verify(token, JWT_SECRET) as Partial<AuthenticatedUser>;
     } catch {
-      throw unauthorized('Invalid or expired token.');
+      throw unauthorized('Token không hợp lệ hoặc đã hết hạn.');
     }
 
     // Tokens signed before the username/role system existed won't carry these
@@ -51,7 +51,7 @@ export class JwtAuthGuard implements CanActivate {
     // token with the current shape) instead of letting downstream code
     // misbehave against `undefined`.
     if (!decoded?.sub || !decoded?.role || !decoded?.username) {
-      throw unauthorized('Session is outdated — please log in again.');
+      throw unauthorized('Phiên đăng nhập đã hết hạn — vui lòng đăng nhập lại.');
     }
 
     request.user = {

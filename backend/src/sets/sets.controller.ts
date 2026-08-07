@@ -22,9 +22,12 @@ import { SetsService } from './sets.service';
 import {
   AddExerciseToSetDto,
   CheckAnswerDto,
+  CreateInlineQuestionDto,
   CreateSetDto,
   DuplicateSetDto,
+  ImportSetDto,
   QuickSubmitDto,
+  ReorderSetDto,
   SaveProgressDto,
   StartAttemptDto,
   SubmitSetDto,
@@ -70,6 +73,22 @@ export class SetsController {
   @Get('by-code/:code')
   async byCode(@Param('code') code: string, @Req() req: AuthenticatedRequest) {
     return ok(await this.setsService.findByCode(code, req.user));
+  }
+
+  // Public marketplace browse — every user's published public sets. No
+  // per-user data needed, just an authenticated caller (guard at class level).
+  @Get('marketplace')
+  async marketplace(
+    @Query('search') search: string | undefined,
+    @Query('page') page: string | undefined,
+    @Query('limit') limit: string | undefined,
+  ) {
+    const result = await this.setsService.listMarketplace({ search, page, limit });
+    return ok(result.items, {
+      page: result.page,
+      limit: result.limit,
+      hasMore: result.hasMore,
+    });
   }
 
   // Auto-save from the quiz player (fire-and-forget).
@@ -123,6 +142,53 @@ export class SetsController {
     @Req() req: AuthenticatedRequest,
   ) {
     return ok(await this.setsService.removeExercise(id, req.user, exerciseId));
+  }
+
+  // Fast-path authoring: create a question and attach it in one call — the
+  // primary way to build a set now; "add from bank" is secondary.
+  @Post(':id/questions')
+  @HttpCode(201)
+  @UseGuards(RolesGuard)
+  @Roles('teacher')
+  async addQuestion(
+    @Param('id') id: string,
+    @Body() dto: CreateInlineQuestionDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return ok(await this.setsService.addInlineQuestion(id, req.user, dto));
+  }
+
+  // Drag-and-drop reorder.
+  @Patch(':id/reorder')
+  @UseGuards(RolesGuard)
+  @Roles('teacher')
+  async reorder(
+    @Param('id') id: string,
+    @Body() dto: ReorderSetDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return ok(await this.setsService.reorderItems(id, req.user, dto?.exerciseIds));
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles('teacher')
+  async remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return ok(await this.setsService.deleteSet(id, req.user));
+  }
+
+  // Marketplace import: deep-clones a public set into the caller's own
+  // ownership (new Exercise rows too, so they can freely edit/delete after).
+  @Post(':id/import')
+  @HttpCode(201)
+  @UseGuards(RolesGuard)
+  @Roles('teacher')
+  async import(
+    @Param('id') id: string,
+    @Body() dto: ImportSetDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return ok(await this.setsService.importSet(id, req.user, dto ?? {}));
   }
 
   // Instant feedback while playing a practice-mode quiz (403 in exam mode).

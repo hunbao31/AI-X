@@ -42,7 +42,7 @@ function PracticePageInner() {
     apiGet<Exercise[]>('/api/v1/exercises')
       .then(setExercises)
       .catch((err) =>
-        setLoadError(err instanceof Error ? err.message : 'Failed to load topics.'),
+        setLoadError(err instanceof Error ? err.message : 'Không thể tải chủ đề.'),
       )
       .finally(() => setLoading(false));
   }, []);
@@ -103,7 +103,7 @@ function PracticePageInner() {
         playCorrect();
         streakRef.current += 1;
         if (streakRef.current >= 3) {
-          mascot.react('streak', `${streakRef.current} in a row! 🔥`);
+          mascot.react('streak', `${streakRef.current} liên tiếp! 🔥`);
         } else {
           mascot.react('correct');
         }
@@ -113,7 +113,7 @@ function PracticePageInner() {
         mascot.react('wrong');
       }
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Failed to submit answer.');
+      setSubmitError(err instanceof Error ? err.message : 'Không thể nộp câu trả lời.');
     } finally {
       setSubmitting(false);
     }
@@ -122,7 +122,7 @@ function PracticePageInner() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {loading ? (
-        <p className="text-center text-slate-400">Loading topics…</p>
+        <p className="text-center text-slate-400">Đang tải chủ đề…</p>
       ) : loadError ? (
         <Card>
           <p className="text-red-400">{loadError}</p>
@@ -130,14 +130,14 @@ function PracticePageInner() {
       ) : exercises.length === 0 ? (
         <Card>
           <p className="text-slate-300">
-            No exercises yet — your teacher has not created any content.
+            Chưa có bài tập nào — giáo viên của bạn chưa tạo nội dung nào.
           </p>
         </Card>
       ) : !started ? (
         // --- Selection phase: pick a topic, then explicitly press Start.
         // No exercise content is fetched or shown until this happens.
         <Card className="space-y-5">
-          <h1 className="text-xl font-semibold text-white">Choose a topic to practice</h1>
+          <h1 className="text-xl font-semibold text-white">Chọn chủ đề để luyện tập</h1>
           <div className="flex flex-wrap gap-2">
             {topics.map((t) => (
               <motion.button
@@ -161,14 +161,14 @@ function PracticePageInner() {
             ))}
           </div>
           <Button onClick={handleStart} disabled={!selectedTopic} className="w-full">
-            Start
+            Bắt đầu
           </Button>
         </Card>
       ) : !current ? (
         <Card className="space-y-4">
-          <p className="text-slate-300">No exercises in this topic.</p>
+          <p className="text-slate-300">Chủ đề này chưa có bài tập nào.</p>
           <Button variant="secondary" onClick={changeTopic}>
-            ← Choose another topic
+            ← Chọn chủ đề khác
           </Button>
         </Card>
       ) : (
@@ -210,7 +210,7 @@ function PracticePageInner() {
                   value={textAnswer}
                   onChange={(e) => setTextAnswer(e.target.value)}
                   disabled={!!result || submitting}
-                  placeholder="Type your answer…"
+                  placeholder="Nhập câu trả lời…"
                   className="input-base px-4 py-3"
                 />
               )}
@@ -224,7 +224,7 @@ function PracticePageInner() {
                     submitting || (current.type === 'mcq' ? !selectedOption : !textAnswer)
                   }
                 >
-                  {submitting ? 'Checking…' : 'Submit'}
+                  {submitting ? 'Đang kiểm tra…' : 'Nộp bài'}
                 </Button>
               )}
             </form>
@@ -243,7 +243,7 @@ function PracticePageInner() {
                 recommendation={result.recommendation}
               />
               <Button variant="secondary" onClick={goToNext}>
-                Next question →
+                Câu hỏi tiếp theo →
               </Button>
             </>
           )}
@@ -255,7 +255,7 @@ function PracticePageInner() {
 
 export default function PracticePage() {
   return (
-    <Suspense fallback={<p className="text-center text-slate-400">Loading…</p>}>
+    <Suspense fallback={<p className="text-center text-slate-400">Đang tải…</p>}>
       <PracticePageInner />
     </Suspense>
   );

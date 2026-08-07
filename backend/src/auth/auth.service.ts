@@ -52,7 +52,7 @@ export class AuthService {
     if (!USERNAME_PATTERN.test(username)) {
       throw apiError(
         'INVALID_USERNAME',
-        'Username must be 3-32 characters: letters, digits, ".", "_" or "-".',
+        'Tên đăng nhập phải từ 3-32 ký tự: chữ cái, chữ số, ".", "_" hoặc "-".',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -60,7 +60,7 @@ export class AuthService {
     if (await this.usersStore.findByUsername(username)) {
       throw apiError(
         'USERNAME_ALREADY_REGISTERED',
-        'Username is already taken.',
+        'Tên đăng nhập đã được sử dụng.',
         HttpStatus.CONFLICT,
       );
     }
@@ -69,7 +69,7 @@ export class AuthService {
     if (normalizedEmail && (await this.usersStore.findByEmail(normalizedEmail))) {
       throw apiError(
         'EMAIL_ALREADY_REGISTERED',
-        'Email is already registered.',
+        'Email đã được đăng ký.',
         HttpStatus.CONFLICT,
       );
     }
@@ -106,7 +106,7 @@ export class AuthService {
     if (!user || !passwordMatches) {
       throw apiError(
         'INVALID_CREDENTIALS',
-        'Invalid username/email or password.',
+        'Tên đăng nhập/email hoặc mật khẩu không hợp lệ.',
         HttpStatus.UNAUTHORIZED,
       );
     }

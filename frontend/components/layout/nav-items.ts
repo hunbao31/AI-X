@@ -8,21 +8,23 @@ export interface NavItem {
 }
 
 export const STUDENT_NAV: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/practice', label: 'Practice', icon: '✏️' },
-  { href: '/quizzes', label: 'Quizzes', icon: '🎯' },
-  { href: '/quick-quiz', label: 'Quick Quiz', icon: '🎲' },
-  { href: '/saved', label: 'Saved', icon: '⭐' },
-  { href: '/history', label: 'History', icon: '🕘' },
-  { href: '/leaderboard', label: 'Leaderboard', icon: '🏆' },
-  { href: '/settings', label: 'Settings', icon: '⚙️' },
+  { href: '/dashboard', label: 'Trang tổng quan', icon: '📊' },
+  { href: '/practice', label: 'Luyện tập', icon: '✏️' },
+  { href: '/quizzes', label: 'Trắc nghiệm', icon: '🎯' },
+  { href: '/quick-quiz', label: 'Trắc nghiệm nhanh', icon: '🎲' },
+  { href: '/forum', label: 'Diễn đàn', icon: '💬' },
+  { href: '/saved', label: 'Đã lưu', icon: '⭐' },
+  { href: '/history', label: 'Lịch sử', icon: '🕘' },
+  { href: '/leaderboard', label: 'Bảng xếp hạng', icon: '🏆' },
+  { href: '/settings', label: 'Cài đặt', icon: '⚙️' },
 ];
 
 export const TEACHER_NAV: NavItem[] = [
-  { href: '/teacher/dashboard', label: 'Dashboard', icon: '📈' },
-  { href: '/teacher/classes', label: 'Classes', icon: '🏫' },
-  { href: '/teacher/create', label: 'Create Exercise', icon: '➕' },
-  { href: '/teacher/manage', label: 'Manage Exercises', icon: '🗂️' },
-  { href: '/teacher/sets', label: 'Quiz Sets', icon: '🎯' },
-  { href: '/teacher/settings', label: 'Settings', icon: '⚙️' },
+  { href: '/teacher/dashboard', label: 'Trang tổng quan', icon: '📈' },
+  { href: '/teacher/classes', label: 'Lớp học', icon: '🏫' },
+  { href: '/teacher/sets', label: 'Bộ đề', icon: '🎯' },
+  { href: '/teacher/manage', label: 'Ngân hàng câu hỏi', icon: '🗂️' },
+  { href: '/teacher/marketplace', label: 'Kho đề', icon: '🛒' },
+  { href: '/teacher/forum', label: 'Diễn đàn', icon: '💬' },
+  { href: '/teacher/settings', label: 'Cài đặt', icon: '⚙️' },
 ];

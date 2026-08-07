@@ -21,7 +21,7 @@ export default function SavedQuestionsPage() {
     apiGet<FavoriteEntry[]>('/api/v1/favorites')
       .then(setFavorites)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Failed to load saved questions.'),
+        setError(err instanceof Error ? err.message : 'Không thể tải danh sách câu hỏi đã lưu.'),
       )
       .finally(() => setLoading(false));
   }, []);
@@ -33,17 +33,17 @@ export default function SavedQuestionsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold text-white">⭐ Saved Questions</h1>
+      <h1 className="text-2xl font-bold text-white">⭐ Câu hỏi đã lưu</h1>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {loading ? (
-        <p className="text-slate-400">Loading saved questions…</p>
+        <p className="text-slate-400">Đang tải câu hỏi đã lưu…</p>
       ) : favorites.length === 0 ? (
         <Card>
           <p className="text-slate-300">
-            Nothing saved yet — tap the ☆ star on any question in a quiz review
-            to keep it here.
+            Chưa có câu hỏi nào được lưu — nhấn vào biểu tượng sao ☆ ở bất kỳ
+            câu hỏi nào trong phần xem lại bài trắc nghiệm để lưu vào đây.
           </p>
         </Card>
       ) : (
@@ -68,10 +68,10 @@ export default function SavedQuestionsPage() {
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <Link href={`/practice?topic=${encodeURIComponent(f.exercise.topic)}`}>
-                    <Button variant="secondary">Practice topic</Button>
+                    <Button variant="secondary">Luyện tập chủ đề</Button>
                   </Link>
                   <Button variant="danger" onClick={() => void remove(f.exercise.id)}>
-                    Remove
+                    Xóa
                   </Button>
                 </div>
               </Card>

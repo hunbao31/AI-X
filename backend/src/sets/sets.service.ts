@@ -18,9 +18,13 @@ import {
   DuplicateSetDto,
   QuickSubmitDto,
   QuizMode,
+  CreateInlineQuestionDto,
+  ImportSetDto,
 } from './dto/set.dto';
 import { questionXp } from './quiz-xp';
 import { seededShuffle } from './quiz-shuffle';
+import { resolveAnswerFromOptions } from '../exercises/answer-resolve';
+import { Difficulty } from '../exercises/dto/create-exercise.dto';
 
 const MAX_TIME_LIMIT_SECONDS = 600;
 const MAX_TOTAL_TIME_SECONDS = 7200;
@@ -99,7 +103,7 @@ export class SetsService {
     if (!Number.isInteger(value) || value < 5 || value > MAX_TIME_LIMIT_SECONDS) {
       throw apiError(
         'VALIDATION_ERROR',
-        `timeLimitPerQuestion must be an integer between 5 and ${MAX_TIME_LIMIT_SECONDS} seconds.`,
+        `timeLimitPerQuestion phải là số nguyên từ 5 đến ${MAX_TIME_LIMIT_SECONDS} giây.`,
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -111,7 +115,7 @@ export class SetsService {
     if (!VALID_MODES.includes(value)) {
       throw apiError(
         'VALIDATION_ERROR',
-        'mode must be "practice" or "exam".',
+        'mode phải là "practice" hoặc "exam".',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -123,7 +127,7 @@ export class SetsService {
     if (!Number.isInteger(value) || value < 30 || value > MAX_TOTAL_TIME_SECONDS) {
       throw apiError(
         'VALIDATION_ERROR',
-        `totalTimeLimit must be an integer between 30 and ${MAX_TOTAL_TIME_SECONDS} seconds.`,
+        `totalTimeLimit phải là số nguyên từ 30 đến ${MAX_TOTAL_TIME_SECONDS} giây.`,
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -137,7 +141,7 @@ export class SetsService {
     if (code.length < 4 || code.length > 32) {
       throw apiError(
         'VALIDATION_ERROR',
-        'accessCode must be 4-32 characters (or empty to remove it).',
+        'accessCode phải có từ 4-32 ký tự (hoặc để trống để xóa).',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -148,7 +152,7 @@ export class SetsService {
     if (!dto?.title?.trim()) {
       throw apiError(
         'VALIDATION_ERROR',
-        'title is required.',
+        'title là bắt buộc.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -185,7 +189,7 @@ export class SetsService {
     if (dto.title !== undefined && !dto.title.trim()) {
       throw apiError(
         'VALIDATION_ERROR',
-        'title cannot be empty.',
+        'title không được để trống.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -235,14 +239,14 @@ export class SetsService {
       },
     });
     if (!set) {
-      throw apiError('SET_NOT_FOUND', 'Quiz set does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('SET_NOT_FOUND', 'Bộ đề không tồn tại.', HttpStatus.NOT_FOUND);
     }
     await this.assertCanView(set, user, code);
 
     if (set.mode !== 'practice') {
       throw apiError(
         'EXAM_MODE',
-        'Answers are hidden during an exam.',
+        'Đáp án bị ẩn trong khi làm bài thi.',
         HttpStatus.FORBIDDEN,
       );
     }
@@ -251,7 +255,7 @@ export class SetsService {
     if (!item) {
       throw apiError(
         'ITEM_NOT_FOUND',
-        'That question is not part of this quiz.',
+        'Câu hỏi này không thuộc bộ đề.',
         HttpStatus.NOT_FOUND,
       );
     }
@@ -307,13 +311,13 @@ export class SetsService {
     });
 
     if (!set) {
-      throw apiError('SET_NOT_FOUND', 'Quiz set does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('SET_NOT_FOUND', 'Bộ đề không tồn tại.', HttpStatus.NOT_FOUND);
     }
     await this.assertCanView(set, user, code);
 
     const isOwner = user.role === 'admin' || set.createdBy === user.sub;
     if (!set.isPublished && !isOwner) {
-      throw apiError('SET_NOT_FOUND', 'Quiz set does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('SET_NOT_FOUND', 'Bộ đề không tồn tại.', HttpStatus.NOT_FOUND);
     }
 
     // Students get the playable projection — never the answers.
@@ -374,7 +378,7 @@ export class SetsService {
     if (!exerciseId?.trim()) {
       throw apiError(
         'VALIDATION_ERROR',
-        'exerciseId is required.',
+        'exerciseId là bắt buộc.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -384,7 +388,7 @@ export class SetsService {
       where: { id: exerciseId },
     });
     if (!exercise) {
-      throw apiError('EXERCISE_NOT_FOUND', 'Exercise does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('EXERCISE_NOT_FOUND', 'Bài tập không tồn tại.', HttpStatus.NOT_FOUND);
     }
 
     const last = await this.prisma.exerciseSetItem.findFirst({
@@ -406,7 +410,7 @@ export class SetsService {
       if (isDuplicate) {
         throw apiError(
           'EXERCISE_ALREADY_IN_SET',
-          'This exercise is already in the set.',
+          'Bài tập này đã có trong bộ đề.',
           HttpStatus.CONFLICT,
         );
       }
@@ -423,13 +427,244 @@ export class SetsService {
     if (!item) {
       throw apiError(
         'ITEM_NOT_FOUND',
-        'That exercise is not in this set.',
+        'Bài tập này không có trong bộ đề.',
         HttpStatus.NOT_FOUND,
       );
     }
 
     await this.prisma.exerciseSetItem.delete({ where: { id: item.id } });
     return { setId, exerciseId };
+  }
+
+  // Fast-path authoring: create a question AND attach it in one call — the
+  // primary way questions get into a set now, "add from bank" is secondary.
+  // Every question authored this way is a real, fully-owned Exercise row, so
+  // it lands in the author's personal bank automatically, with no separate
+  // sync step.
+  async addInlineQuestion(
+    setId: string,
+    user: AuthenticatedUser,
+    dto: CreateInlineQuestionDto,
+  ) {
+    const set = await this.getOwnedSet(setId, user);
+
+    const question = dto?.question?.trim();
+    if (!question) {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'question là bắt buộc.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+    const options = [dto?.optionA, dto?.optionB, dto?.optionC, dto?.optionD]
+      .map((o) => o?.trim() ?? '')
+      .filter((o) => o !== '');
+    if (options.length < 2) {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'Cần ít nhất hai lựa chọn (A và B).',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+    if (new Set(options.map((o) => o.toLowerCase())).size !== options.length) {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'Các lựa chọn phải khác nhau.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+    const correctRaw = dto?.correctAnswer?.trim();
+    if (!correctRaw) {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'correctAnswer là bắt buộc.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+    const resolved = resolveAnswerFromOptions(options, correctRaw);
+    if (resolved.error) {
+      throw apiError('VALIDATION_ERROR', resolved.error, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+    const difficulty: Difficulty =
+      dto?.difficulty && ['easy', 'medium', 'hard'].includes(dto.difficulty)
+        ? dto.difficulty
+        : 'medium';
+
+    return this.prisma.$transaction(async (tx) => {
+      const exercise = await tx.exercise.create({
+        data: {
+          question,
+          type: 'mcq',
+          options,
+          answer: resolved.answer as string,
+          difficulty,
+          // No natural "topic" in the fast-authoring flow — group by the set
+          // itself so the personal bank stays meaningfully organized.
+          topic: set.title,
+          createdBy: user.sub,
+        },
+      });
+
+      const last = await tx.exerciseSetItem.findFirst({
+        where: { setId },
+        orderBy: { order: 'desc' },
+        select: { order: true },
+      });
+      return tx.exerciseSetItem.create({
+        data: { setId, exerciseId: exercise.id, order: (last?.order ?? 0) + 1 },
+        include: { exercise: true },
+      });
+    });
+  }
+
+  // Drag-and-drop reorder — exerciseIds must be exactly the set's current
+  // questions (no silent add/drop through this endpoint).
+  async reorderItems(setId: string, user: AuthenticatedUser, exerciseIds: unknown) {
+    await this.getOwnedSet(setId, user);
+    if (!Array.isArray(exerciseIds) || exerciseIds.length === 0) {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'Mảng exerciseIds là bắt buộc.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const existing = await this.prisma.exerciseSetItem.findMany({
+      where: { setId },
+      select: { exerciseId: true },
+    });
+    const existingIds = new Set(existing.map((i) => i.exerciseId));
+    const providedIds = new Set(exerciseIds);
+    const matches =
+      existingIds.size === providedIds.size &&
+      [...existingIds].every((id) => providedIds.has(id));
+    if (!matches) {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'exerciseIds phải khớp chính xác với các câu hỏi hiện có trong bộ đề.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    await this.prisma.$transaction(
+      (exerciseIds as string[]).map((exerciseId, i) =>
+        this.prisma.exerciseSetItem.update({
+          where: { setId_exerciseId: { setId, exerciseId } },
+          data: { order: i + 1 },
+        }),
+      ),
+    );
+    return { setId, order: exerciseIds as string[] };
+  }
+
+  async deleteSet(setId: string, user: AuthenticatedUser) {
+    await this.getOwnedSet(setId, user);
+    // ExerciseSetItem + QuizAttempt cascade via the schema; Exercise rows
+    // are untouched (no FK from Exercise to ExerciseSet), so every question
+    // stays in the owner's personal bank exactly as before the delete.
+    await this.prisma.exerciseSet.delete({ where: { id: setId } });
+    return { id: setId };
+  }
+
+  // Marketplace: browse public, published sets across every user.
+  async listMarketplace(query: { search?: string; page?: string; limit?: string }) {
+    const page = Math.max(1, Number.parseInt(query.page ?? '1', 10) || 1);
+    const limit = Math.min(
+      50,
+      Math.max(1, Number.parseInt(query.limit ?? '', 10) || 20),
+    );
+
+    const where: Prisma.ExerciseSetWhereInput = {
+      isPublic: true,
+      isPublished: true,
+      ...(query.search?.trim()
+        ? { title: { contains: query.search.trim(), mode: 'insensitive' as const } }
+        : {}),
+    };
+
+    const rows = await this.prisma.exerciseSet.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit + 1,
+      include: {
+        creator: { select: { id: true, username: true, avatar: true } },
+        _count: { select: { items: true, attempts: true } },
+      },
+    });
+
+    const hasMore = rows.length > limit;
+    return { items: rows.slice(0, limit), page, limit, hasMore };
+  }
+
+  // Deep-clone a public set into the importer's own ownership: new Exercise
+  // rows (so they can edit/delete freely) + a new ExerciseSet, fully
+  // independent of the original. Deleting either copy never touches the
+  // other — there is no shared row between them after this returns.
+  async importSet(setId: string, user: AuthenticatedUser, dto: ImportSetDto) {
+    const set = await this.prisma.exerciseSet.findUnique({
+      where: { id: setId },
+      include: { items: { orderBy: { order: 'asc' }, include: { exercise: true } } },
+    });
+    if (!set) {
+      throw apiError('SET_NOT_FOUND', 'Bộ đề không tồn tại.', HttpStatus.NOT_FOUND);
+    }
+    if (!set.isPublic && user.role !== 'admin') {
+      throw apiError(
+        'FORBIDDEN',
+        'Chỉ có thể nhập các bộ đề công khai.',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    if (dto?.classId) {
+      await this.classesService.assertTeacherOf(dto.classId, user);
+    }
+
+    const newSetId = await this.prisma.$transaction(async (tx) => {
+      const newSet = await tx.exerciseSet.create({
+        data: {
+          title: `${set.title} (đã nhập)`,
+          description: set.description,
+          classId: dto?.classId ?? null,
+          // Imported copies always start private — importing never
+          // auto-republishes someone else's content under your name.
+          isPublic: false,
+          isPublished: true,
+          mode: set.mode,
+          shuffleQuestions: set.shuffleQuestions,
+          shuffleAnswers: set.shuffleAnswers,
+          timeLimitPerQuestion: set.timeLimitPerQuestion,
+          totalTimeLimit: set.totalTimeLimit,
+          createdBy: user.sub,
+        },
+      });
+
+      for (const item of set.items) {
+        const newExercise = await tx.exercise.create({
+          data: {
+            question: item.exercise.question,
+            type: item.exercise.type,
+            options: item.exercise.options ?? undefined,
+            answer: item.exercise.answer,
+            difficulty: item.exercise.difficulty,
+            tags: item.exercise.tags,
+            topic: item.exercise.topic,
+            // No topicId: the importer doesn't own the original's class/topic.
+            createdBy: user.sub,
+          },
+        });
+        await tx.exerciseSetItem.create({
+          data: { setId: newSet.id, exerciseId: newExercise.id, order: item.order },
+        });
+      }
+
+      return newSet.id;
+    });
+
+    return this.prisma.exerciseSet.findUnique({
+      where: { id: newSetId },
+      include: { _count: { select: { items: true } } },
+    });
   }
 
   async submit(
@@ -440,7 +675,7 @@ export class SetsService {
     if (!Array.isArray(dto?.answers)) {
       throw apiError(
         'VALIDATION_ERROR',
-        'answers array is required.',
+        'Mảng answers là bắt buộc.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -450,14 +685,14 @@ export class SetsService {
       include: { items: { orderBy: { order: 'asc' }, include: { exercise: true } } },
     });
     if (!set) {
-      throw apiError('SET_NOT_FOUND', 'Quiz set does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('SET_NOT_FOUND', 'Bộ đề không tồn tại.', HttpStatus.NOT_FOUND);
     }
     await this.assertCanView(set, user, dto.code);
 
     if (set.items.length === 0) {
       throw apiError(
         'SET_EMPTY',
-        'This quiz set has no questions yet.',
+        'Bộ đề này chưa có câu hỏi nào.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -613,7 +848,7 @@ export class SetsService {
       },
     });
     if (!set) {
-      throw apiError('SET_NOT_FOUND', 'Quiz set does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('SET_NOT_FOUND', 'Bộ đề không tồn tại.', HttpStatus.NOT_FOUND);
     }
     await this.assertCanView(set, user, code);
 
@@ -653,7 +888,7 @@ export class SetsService {
       include: { _count: { select: { items: true } } },
     });
     if (!set) {
-      throw apiError('SET_NOT_FOUND', 'Quiz set does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('SET_NOT_FOUND', 'Bộ đề không tồn tại.', HttpStatus.NOT_FOUND);
     }
     await this.assertCanView(set, user, code);
 
@@ -690,12 +925,12 @@ export class SetsService {
       where: { id: attemptId },
     });
     if (!attempt || attempt.userId !== user.sub) {
-      throw apiError('ATTEMPT_NOT_FOUND', 'Attempt does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('ATTEMPT_NOT_FOUND', 'Lượt làm bài không tồn tại.', HttpStatus.NOT_FOUND);
     }
     if (attempt.completedAt !== null) {
       throw apiError(
         'ATTEMPT_COMPLETED',
-        'This attempt is already submitted.',
+        'Lượt làm bài này đã được nộp.',
         HttpStatus.CONFLICT,
       );
     }
@@ -738,7 +973,7 @@ export class SetsService {
 
     return this.prisma.exerciseSet.create({
       data: {
-        title: dto?.title?.trim() || `${set.title} (copy)`,
+        title: dto?.title?.trim() || `${set.title} (bản sao)`,
         description: set.description,
         classId: dto?.classId ?? null,
         isPublic: false,
@@ -790,7 +1025,7 @@ export class SetsService {
     if (!trimmed) {
       throw apiError(
         'VALIDATION_ERROR',
-        'code is required.',
+        'code là bắt buộc.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -801,7 +1036,7 @@ export class SetsService {
     if (!set || (!set.isPublished && set.createdBy !== user.sub)) {
       throw apiError(
         'SET_NOT_FOUND',
-        'No quiz matches that code.',
+        'Không có bộ đề nào khớp với mã này.',
         HttpStatus.NOT_FOUND,
       );
     }
@@ -815,7 +1050,7 @@ export class SetsService {
     if (topics.length === 0) {
       throw apiError(
         'NO_EXERCISES',
-        'No questions exist yet — ask a teacher to add some.',
+        'Chưa có câu hỏi nào — hãy nhờ giáo viên thêm câu hỏi.',
         HttpStatus.NOT_FOUND,
       );
     }
@@ -851,7 +1086,7 @@ export class SetsService {
     if (!Array.isArray(dto?.answers) || dto.answers.length === 0) {
       throw apiError(
         'VALIDATION_ERROR',
-        'answers array is required.',
+        'Mảng answers là bắt buộc.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -926,12 +1161,12 @@ export class SetsService {
   private async getOwnedSet(setId: string, user: AuthenticatedUser) {
     const set = await this.prisma.exerciseSet.findUnique({ where: { id: setId } });
     if (!set) {
-      throw apiError('SET_NOT_FOUND', 'Quiz set does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('SET_NOT_FOUND', 'Bộ đề không tồn tại.', HttpStatus.NOT_FOUND);
     }
     if (user.role !== 'admin' && set.createdBy !== user.sub) {
       throw apiError(
         'FORBIDDEN',
-        'Only the set creator can modify it.',
+        'Chỉ người tạo bộ đề mới có thể chỉnh sửa.',
         HttpStatus.FORBIDDEN,
       );
     }
@@ -959,7 +1194,7 @@ export class SetsService {
 
     throw apiError(
       'FORBIDDEN',
-      'You do not have access to this quiz set.',
+      'Bạn không có quyền truy cập bộ đề này.',
       HttpStatus.FORBIDDEN,
     );
   }

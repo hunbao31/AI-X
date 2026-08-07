@@ -14,6 +14,11 @@ interface FeedbackCardProps {
 }
 
 const LEVEL_TONE = { LOW: 'red', MEDIUM: 'yellow', HIGH: 'green' } as const;
+const LEVEL_LABEL: Record<'LOW' | 'MEDIUM' | 'HIGH', string> = {
+  LOW: 'Yếu',
+  MEDIUM: 'Khá',
+  HIGH: 'Tốt',
+};
 
 export function FeedbackCard({
   correct,
@@ -33,16 +38,16 @@ export function FeedbackCard({
     >
       <div className="flex items-center justify-between">
         <h3 className={`text-lg font-bold ${correct ? 'text-green-300' : 'text-red-300'}`}>
-          {correct ? 'Correct!' : 'Incorrect'}
+          {correct ? 'Chính xác!' : 'Chưa đúng'}
         </h3>
         <Badge tone={LEVEL_TONE[understandingLevel]}>
-          {understandingLevel} understanding
+          Mức độ hiểu: {LEVEL_LABEL[understandingLevel]}
         </Badge>
       </div>
 
       {!correct && (
         <p className="text-sm text-slate-300">
-          Correct answer:{' '}
+          Đáp án đúng:{' '}
           <MathText text={correctAnswer} className="font-semibold text-white" />
         </p>
       )}
@@ -51,12 +56,12 @@ export function FeedbackCard({
         <MathText text={explanation} />
       </p>
       <p className="text-sm italic text-slate-400">
-        Suggestion: <MathText text={suggestion} />
+        Gợi ý: <MathText text={suggestion} />
       </p>
 
       <div className="grid grid-cols-1 gap-3 border-t border-white/10 pt-4 sm:grid-cols-3">
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-400">Mastery</p>
+          <p className="text-xs uppercase tracking-wide text-slate-400">Mức độ thành thạo</p>
           <p className="text-lg font-bold text-white">{mastery.score}/100</p>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
             <div
@@ -66,7 +71,7 @@ export function FeedbackCard({
           </div>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-400">Level</p>
+          <p className="text-xs uppercase tracking-wide text-slate-400">Cấp độ</p>
           <p className="text-lg font-bold text-white">
             {gamification.level}{' '}
             <span className="text-sm font-normal text-slate-400">
@@ -75,7 +80,7 @@ export function FeedbackCard({
           </p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-400">Streak</p>
+          <p className="text-xs uppercase tracking-wide text-slate-400">Chuỗi ngày</p>
           <p className="text-lg font-bold text-white">🔥 {gamification.streak}d</p>
         </div>
       </div>

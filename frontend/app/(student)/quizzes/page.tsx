@@ -22,7 +22,7 @@ export default function QuizzesPage() {
     apiGet<SetSummary[]>('/api/v1/sets')
       .then(setSets)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Failed to load quizzes.'),
+        setError(err instanceof Error ? err.message : 'Không thể tải danh sách trắc nghiệm.'),
       )
       .finally(() => setLoading(false));
   }, []);
@@ -40,14 +40,14 @@ export default function QuizzesPage() {
       );
       router.push(`/quiz/${found.id}?code=${encodeURIComponent(code)}`);
     } catch (err) {
-      setCodeError(err instanceof Error ? err.message : 'No quiz matches that code.');
+      setCodeError(err instanceof Error ? err.message : 'Không tìm thấy bài trắc nghiệm nào khớp với mã đó.');
       setUnlocking(false);
     }
   }
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold text-white">Quizzes</h1>
+      <h1 className="text-2xl font-bold text-white">Trắc nghiệm</h1>
 
       <Card className="space-y-2">
         <form onSubmit={handleUnlock} className="flex gap-2">
@@ -55,11 +55,11 @@ export default function QuizzesPage() {
             type="text"
             value={codeInput}
             onChange={(e) => setCodeInput(e.target.value)}
-            placeholder="Have a quiz code? Enter it here"
+            placeholder="Bạn có mã bài trắc nghiệm? Nhập vào đây"
             className="input-base flex-1"
           />
           <Button type="submit" variant="secondary" disabled={unlocking}>
-            {unlocking ? 'Opening…' : 'Unlock'}
+            {unlocking ? 'Đang mở…' : 'Mở khóa'}
           </Button>
         </form>
         {codeError && <p className="text-sm text-red-400">{codeError}</p>}
@@ -68,12 +68,12 @@ export default function QuizzesPage() {
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {loading ? (
-        <p className="text-slate-400">Loading quizzes…</p>
+        <p className="text-slate-400">Đang tải danh sách trắc nghiệm…</p>
       ) : sets.length === 0 ? (
         <Card>
           <p className="text-slate-300">
-            No quizzes available yet. Join a class to see its quizzes, or check
-            back for public ones.
+            Chưa có bài trắc nghiệm nào. Tham gia lớp học để xem bài trắc
+            nghiệm của lớp, hoặc quay lại sau để xem các bài công khai.
           </p>
         </Card>
       ) : (
@@ -90,24 +90,24 @@ export default function QuizzesPage() {
                 )}
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   {s.isPublic ? (
-                    <Badge tone="green">public</Badge>
+                    <Badge tone="green">công khai</Badge>
                   ) : s.class ? (
                     <Badge tone="indigo">{s.class.name}</Badge>
                   ) : (
-                    <Badge>private</Badge>
+                    <Badge>riêng tư</Badge>
                   )}
                   <span className="text-xs text-slate-400">
-                    {s._count.items} questions
+                    {s._count.items} câu hỏi
                     {s.timeLimitPerQuestion
-                      ? ` · ${s.timeLimitPerQuestion}s each`
-                      : ' · untimed'}
-                    {' · by '}
+                      ? ` · ${s.timeLimitPerQuestion} giây mỗi câu`
+                      : ' · không giới hạn thời gian'}
+                    {' · bởi '}
                     {s.creator.username}
                   </span>
                 </div>
               </div>
               <Link href={`/quiz/${s.id}`}>
-                <Button variant="secondary">Open</Button>
+                <Button variant="secondary">Mở</Button>
               </Link>
             </Card>
           ))}

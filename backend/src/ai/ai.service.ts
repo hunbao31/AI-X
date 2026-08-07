@@ -46,7 +46,9 @@ Return JSON only, with no other text before or after it, in exactly this shape:
   "understandingLevel": "LOW" | "MEDIUM" | "HIGH",
   "explanation": string,
   "suggestion": string
-}`;
+}
+
+Write the "explanation" and "suggestion" fields in Vietnamese.`;
 }
 
 function extractJson(text: string): unknown {

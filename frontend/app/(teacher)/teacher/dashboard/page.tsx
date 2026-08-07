@@ -32,20 +32,20 @@ interface SetAnalytics {
 const QUICK_LINKS = [
   {
     href: '/teacher/classes',
-    title: 'Classes',
-    description: 'Create classes and share join codes',
+    title: 'Lớp học',
+    description: 'Tạo lớp học và chia sẻ mã tham gia',
     icon: '🏫',
   },
   {
     href: '/teacher/manage?import=1',
-    title: 'Import Questions',
-    description: 'Bulk-add from CSV — the fast way',
+    title: 'Nhập câu hỏi',
+    description: 'Nhập nhiều câu hỏi cùng lúc từ file CSV',
     icon: '📥',
   },
   {
     href: '/teacher/sets',
-    title: 'Quiz Sets',
-    description: 'Build Kahoot-style quizzes',
+    title: 'Bộ đề',
+    description: 'Tạo bộ đề trắc nghiệm cho cả lớp cùng làm',
     icon: '🎯',
   },
 ];
@@ -72,19 +72,19 @@ export default function TeacherDashboardPage() {
         setSetStatsList(quizStats);
       })
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Failed to load stats.'),
+        setError(err instanceof Error ? err.message : 'Không thể tải số liệu thống kê.'),
       )
       .finally(() => setLoading(false));
   }, []);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold text-white">Teacher Dashboard</h1>
+      <h1 className="text-2xl font-bold text-white">Trang tổng quan giáo viên</h1>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {loading ? (
-        <p className="text-slate-400">Loading stats…</p>
+        <p className="text-slate-400">Đang tải số liệu…</p>
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -93,7 +93,7 @@ export default function TeacherDashboardPage() {
                 {stats?.totalExercises ?? 0}
               </p>
               <p className="mt-2 text-sm uppercase tracking-wide text-slate-400">
-                Exercises created
+                Bài tập đã tạo
               </p>
             </Card>
             <Card className="text-center transition-transform hover:scale-105">
@@ -101,7 +101,7 @@ export default function TeacherDashboardPage() {
                 {stats?.totalAttempts ?? 0}
               </p>
               <p className="mt-2 text-sm uppercase tracking-wide text-slate-400">
-                Student attempts received
+                Lượt làm bài của học sinh
               </p>
             </Card>
             <Card className="text-center transition-transform hover:scale-105">
@@ -109,7 +109,7 @@ export default function TeacherDashboardPage() {
                 {classes.length}
               </p>
               <p className="mt-2 text-sm uppercase tracking-wide text-slate-400">
-                Classes
+                Lớp học
               </p>
             </Card>
           </div>
@@ -129,7 +129,7 @@ export default function TeacherDashboardPage() {
           {questions.length > 0 && (
             <Card className="space-y-3">
               <h2 className="text-lg font-semibold text-white">
-                Most missed questions
+                Câu hỏi hay sai nhất
               </h2>
               {questions.slice(0, 5).map((q) => (
                 <div
@@ -141,7 +141,7 @@ export default function TeacherDashboardPage() {
                       <MathText text={q.question} />
                     </p>
                     <p className="mt-1 text-xs text-slate-400">
-                      {q.topic} · {q.attempts} attempts
+                      {q.topic} · {q.attempts} lượt làm
                     </p>
                   </div>
                   <span
@@ -149,7 +149,7 @@ export default function TeacherDashboardPage() {
                       q.correctRate < 50 ? 'text-red-300' : 'text-yellow-300'
                     }`}
                   >
-                    {q.correctRate}% correct
+                    {q.correctRate}% đúng
                   </span>
                 </div>
               ))}
@@ -158,7 +158,7 @@ export default function TeacherDashboardPage() {
 
           {setStatsList.length > 0 && (
             <Card className="space-y-3">
-              <h2 className="text-lg font-semibold text-white">Quiz performance</h2>
+              <h2 className="text-lg font-semibold text-white">Hiệu suất bộ đề</h2>
               {setStatsList.slice(0, 6).map((s) => (
                 <Link
                   key={s.setId}
@@ -168,13 +168,13 @@ export default function TeacherDashboardPage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-white">{s.title}</p>
                     <p className="mt-1 text-xs text-slate-400">
-                      {s.attempts} attempt{s.attempts === 1 ? '' : 's'}
+                      {s.attempts} lượt làm
                       {s.avgDurationSeconds !== null &&
-                        ` · avg time ${Math.round(s.avgDurationSeconds)}s`}
+                        ` · thời gian TB ${Math.round(s.avgDurationSeconds)}s`}
                     </p>
                   </div>
                   <span className="shrink-0 text-sm font-bold text-white">
-                    avg {s.avgScore}
+                    Điểm TB {s.avgScore}
                   </span>
                 </Link>
               ))}

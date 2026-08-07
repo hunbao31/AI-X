@@ -37,6 +37,15 @@ export class ImportExercisesDto {
   difficulty?: Difficulty;
 }
 
+// Same destination fields as ImportExercisesDto, minus `csv` — the file
+// itself arrives as multipart (see excel-upload.config.ts), these are the
+// accompanying form fields.
+export class ImportExcelDto {
+  topicId?: string | null;
+  topic?: string;
+  difficulty?: Difficulty;
+}
+
 export interface ExerciseFilters {
   topic?: string;
   topicId?: string;
@@ -44,4 +53,6 @@ export interface ExerciseFilters {
   type?: string;
   tag?: string;
   search?: string;
+  // Personal bank: restrict to one author's questions.
+  createdBy?: string;
 }

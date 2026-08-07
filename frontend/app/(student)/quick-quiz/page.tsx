@@ -39,7 +39,7 @@ export default function QuickQuizPage() {
     try {
       const generated = await apiPost<QuickQuiz>('/api/v1/sets/quick-start', {});
       if (generated.questions.length === 0) {
-        setError('No questions available yet.');
+        setError('Chưa có câu hỏi nào.');
         return;
       }
       setQuiz(generated);
@@ -49,7 +49,7 @@ export default function QuickQuizPage() {
       questionStartRef.current = Date.now();
       setPhase('playing');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start a quick quiz.');
+      setError(err instanceof Error ? err.message : 'Không thể bắt đầu trắc nghiệm nhanh.');
     }
   }
 
@@ -68,7 +68,7 @@ export default function QuickQuizPage() {
       else playWrong();
       setPhase('done');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit.');
+      setError(err instanceof Error ? err.message : 'Không thể nộp bài.');
       setPhase('playing');
     }
   }, [playCorrect, playWrong]);
@@ -97,14 +97,10 @@ export default function QuickQuizPage() {
       <motion.div variants={popIn} initial="hidden" animate="show" className="mx-auto max-w-2xl">
         <Card className="space-y-4 text-center">
           <p className="text-5xl">🎲</p>
-          <h1 className="text-2xl font-bold text-white">Quick Quiz</h1>
-          <p className="text-sm text-slate-400">
-            A random topic, questions matched to your level. No pressure — XP
-            still counts.
-          </p>
+          <h1 className="text-2xl font-bold text-white">Trắc nghiệm nhanh</h1>
           {error && <p className="text-sm text-red-400">{error}</p>}
           <Button onClick={handleStart} className="w-full">
-            Start Random Quiz
+            Bắt đầu trắc nghiệm ngẫu nhiên
           </Button>
         </Card>
       </motion.div>
@@ -127,10 +123,10 @@ export default function QuickQuizPage() {
             <XPCounter gained={result.xpGained} />
             <div className="flex justify-center gap-3">
               <Button variant="secondary" onClick={handleStart}>
-                Another one
+                Làm bài khác
               </Button>
               <Link href="/dashboard">
-                <Button variant="ghost">Dashboard</Button>
+                <Button variant="ghost">Trang tổng quan</Button>
               </Link>
             </div>
           </Card>
@@ -138,7 +134,7 @@ export default function QuickQuizPage() {
 
         <motion.div variants={fadeSlideUp}>
           <Card className="space-y-3">
-            <h2 className="text-lg font-semibold text-white">Review</h2>
+            <h2 className="text-lg font-semibold text-white">Xem lại</h2>
             {result.results.map((r, i) => {
               const question = questions.find((q) => q.exerciseId === r.exerciseId);
               return (
@@ -155,14 +151,14 @@ export default function QuickQuizPage() {
                     <MathText text={question?.question ?? ''} />
                   </p>
                   <p className="mt-1 text-xs text-slate-300">
-                    Your answer:{' '}
+                    Câu trả lời của bạn:{' '}
                     <MathText
-                      text={r.yourAnswer || '(no answer)'}
+                      text={r.yourAnswer || '(chưa trả lời)'}
                       className={r.correct ? 'text-green-300' : 'text-red-300'}
                     />
                     {!r.correct && r.correctAnswer !== null && (
                       <>
-                        {' · Correct: '}
+                        {' · Đáp án: '}
                         <MathText text={r.correctAnswer} className="text-green-300" />
                       </>
                     )}
@@ -184,7 +180,7 @@ export default function QuickQuizPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between text-sm text-slate-400">
         <span>
-          {quiz?.topic} · Question {index + 1} of {questions.length}
+          {quiz?.topic} · Câu {index + 1}/{questions.length}
         </span>
       </div>
 
@@ -224,7 +220,7 @@ export default function QuickQuizPage() {
                   value={textAnswer}
                   onChange={(e) => setTextAnswer(e.target.value)}
                   disabled={phase === 'submitting'}
-                  placeholder="Type your answer…"
+                  placeholder="Nhập câu trả lời…"
                   className="input-base px-4 py-3"
                 />
               )}
@@ -237,10 +233,10 @@ export default function QuickQuizPage() {
                 className="w-full"
               >
                 {phase === 'submitting'
-                  ? 'Submitting…'
+                  ? 'Đang nộp bài…'
                   : index + 1 >= questions.length
-                    ? 'Finish'
-                    : 'Next →'}
+                    ? 'Hoàn thành'
+                    : 'Tiếp theo →'}
               </Button>
             </Card>
           </motion.div>

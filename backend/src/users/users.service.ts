@@ -45,7 +45,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw apiError('USER_NOT_FOUND', 'User does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('USER_NOT_FOUND', 'Người dùng không tồn tại.', HttpStatus.NOT_FOUND);
     }
 
     return user;
@@ -60,7 +60,7 @@ export class UsersService {
       if (!USERNAME_PATTERN.test(username)) {
         throw apiError(
           'INVALID_USERNAME',
-          'Username must be 3-32 characters with no spaces: letters, digits, ".", "_" or "-".',
+          'Tên đăng nhập phải từ 3-32 ký tự, không có khoảng trắng: chữ cái, chữ số, ".", "_" hoặc "-".',
           HttpStatus.UNPROCESSABLE_ENTITY,
         );
       }
@@ -71,7 +71,7 @@ export class UsersService {
       if (existing && existing.id !== userId) {
         throw apiError(
           'USERNAME_TAKEN',
-          'Username already taken',
+          'Tên đăng nhập đã được sử dụng',
           HttpStatus.CONFLICT,
         );
       }
@@ -82,7 +82,7 @@ export class UsersService {
       if (!isAvatarId(input.avatar)) {
         throw apiError(
           'INVALID_AVATAR',
-          'avatar must be one of the preset avatar ids.',
+          'Ảnh đại diện phải là một trong các ảnh đại diện có sẵn.',
           HttpStatus.UNPROCESSABLE_ENTITY,
         );
       }
@@ -92,7 +92,7 @@ export class UsersService {
     if (Object.keys(data).length === 0) {
       throw apiError(
         'VALIDATION_ERROR',
-        'Provide username and/or avatar to update.',
+        'Vui lòng cung cấp tên đăng nhập và/hoặc ảnh đại diện để cập nhật.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
@@ -192,7 +192,7 @@ export class UsersService {
     if (typeof theme !== 'string' || !VALID_THEMES.includes(theme as Theme)) {
       throw apiError(
         'VALIDATION_ERROR',
-        'theme must be "light" or "dark".',
+        'Giao diện phải là "light" hoặc "dark".',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }

@@ -6,10 +6,12 @@ import { apiPost } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { storeSession } from '@/lib/session';
+import { useUser } from '@/lib/user-context';
 import type { LoginResult } from '@/lib/types';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setUser } = useUser();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -27,11 +29,16 @@ export default function LoginPage() {
       });
 
       storeSession(result.token, result.user);
-      router.push(
-        result.user.role === 'student' ? '/dashboard' : '/teacher/dashboard',
-      );
+      setUser(result.user);
+      const destination =
+        result.user.role === 'student'
+          ? '/dashboard'
+          : result.user.role === 'admin'
+            ? '/admin'
+            : '/teacher/dashboard';
+      router.push(destination);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed.');
+      setError(err instanceof Error ? err.message : 'Đăng nhập thất bại.');
     } finally {
       setLoading(false);
     }
@@ -39,14 +46,14 @@ export default function LoginPage() {
 
   return (
     <Card className="w-full max-w-sm animate-fade-in">
-      <h1 className="mb-6 text-2xl font-bold text-white">Welcome back</h1>
+      <h1 className="mb-6 text-2xl font-bold text-white">Chào mừng trở lại</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label
             htmlFor="identifier"
             className="mb-1.5 block text-sm font-medium text-slate-300"
           >
-            Username or email
+            Tên đăng nhập hoặc email
           </label>
           <input
             id="identifier"
@@ -63,7 +70,7 @@ export default function LoginPage() {
             htmlFor="password"
             className="mb-1.5 block text-sm font-medium text-slate-300"
           >
-            Password
+            Mật khẩu
           </label>
           <input
             id="password"
@@ -77,13 +84,13 @@ export default function LoginPage() {
         </div>
         {error && <p className="text-sm text-red-400">{error}</p>}
         <Button type="submit" disabled={loading} className="w-full">
-          {loading ? 'Logging in…' : 'Log in'}
+          {loading ? 'Đang đăng nhập…' : 'Đăng nhập'}
         </Button>
       </form>
       <p className="mt-6 text-center text-sm text-slate-400">
-        No account?{' '}
+        Chưa có tài khoản?{' '}
         <a href="/register" className="font-medium text-indigo-300 hover:text-indigo-200">
-          Register
+          Đăng ký
         </a>
       </p>
     </Card>

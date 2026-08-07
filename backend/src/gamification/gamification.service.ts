@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { GamificationStore } from './gamification.store';
 import { PrismaService } from '../prisma/prisma.service';
 import { Badge, computeBadges } from './badges';
@@ -60,9 +61,18 @@ export class GamificationService {
     userId: string,
     correct: boolean,
     xpOverride?: number,
+    tx?: Prisma.TransactionClient,
   ): Promise<GamificationSummary> {
     return toSummary(
-      await this.gamificationStore.recordAttempt(userId, correct, xpOverride),
+      await this.gamificationStore.recordAttempt(userId, correct, xpOverride, tx),
     );
+  }
+
+  async adjustXp(
+    userId: string,
+    delta: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<GamificationSummary> {
+    return toSummary(await this.gamificationStore.adjustXp(userId, delta, tx));
   }
 }

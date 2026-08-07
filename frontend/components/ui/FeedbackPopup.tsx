@@ -36,7 +36,7 @@ export function FeedbackPopup({ popup }: FeedbackPopupProps) {
                 popup.correct ? 'text-green-300' : 'text-red-300'
               }`}
             >
-              {popup.correct ? 'Correct!' : 'Wrong!'}
+              {popup.correct ? 'Chính xác!' : 'Sai rồi!'}
             </p>
             {popup.correct && popup.xp !== null && (
               <p className="xp-glow mt-1 text-lg font-bold text-amber-300">

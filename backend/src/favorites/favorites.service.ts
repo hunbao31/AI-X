@@ -26,7 +26,7 @@ export class FavoritesService {
       select: { id: true },
     });
     if (!exercise) {
-      throw apiError('EXERCISE_NOT_FOUND', 'Question does not exist.', HttpStatus.NOT_FOUND);
+      throw apiError('EXERCISE_NOT_FOUND', 'Câu hỏi không tồn tại.', HttpStatus.NOT_FOUND);
     }
 
     await this.prisma.favoriteQuestion.upsert({

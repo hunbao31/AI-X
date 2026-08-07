@@ -299,3 +299,149 @@ export interface AttemptResult {
 export interface UserProfile extends PublicUser {
   createdAt: string;
 }
+
+// --- Community forum ---
+
+export interface ForumAuthor {
+  id: string;
+  username: string;
+  avatar: string;
+}
+
+export interface ForumPostSummary {
+  id: string;
+  imageUrl: string;
+  description: string | null;
+  answerCount: number;
+  rewardScore: number;
+  hasAcceptedAnswer: boolean;
+  createdAt: string;
+  author: ForumAuthor;
+  topic: { id: string; name: string } | null;
+  class: { id: string; name: string } | null;
+}
+
+export interface ForumAnswer {
+  id: string;
+  content: string;
+  imageUrl: string | null;
+  isAccepted: boolean;
+  upvoteCount: number;
+  createdAt: string;
+  author: ForumAuthor;
+  upvotedByMe: boolean;
+}
+
+export interface ForumPostDetail extends ForumPostSummary {
+  answers: ForumAnswer[];
+}
+
+export type ForumSort = 'newest' | 'most_answered' | 'most_rewarded';
+
+export interface UpvoteResult {
+  upvoted: boolean;
+  upvoteCount: number;
+}
+
+export interface AcceptResult {
+  id: string;
+  isAccepted: boolean;
+}
+
+// --- Quiz builder / personal bank / marketplace ---
+
+// Mirrors backend CreateInlineQuestionDto — fast-path authoring, no
+// separate "create in the bank" step.
+export interface InlineQuestionPayload {
+  question: string;
+  optionA: string;
+  optionB: string;
+  optionC?: string;
+  optionD?: string;
+  correctAnswer: string;
+  difficulty?: Difficulty;
+}
+
+export interface MarketplaceSet {
+  id: string;
+  title: string;
+  description: string | null;
+  mode: QuizMode;
+  createdAt: string;
+  creator: ForumAuthor;
+  _count: { items: number; attempts: number };
+}
+
+// --- Diagnostic skill catalog (drag-and-drop authoring) ---
+
+export type PriorityTier = 'cao' | 'trung_binh' | 'thap';
+export type DiagnosticDifficulty = 'de' | 'trung_binh' | 'kho';
+
+export interface SkillCatalogSkill {
+  skillCode: string;
+  vnName: string;
+  priorityTier: PriorityTier;
+  needsVnName: boolean;
+  daCoCauHoi: boolean;
+  chuongSgk: string;
+  baiSgk: number;
+}
+
+export interface SkillCatalogBai {
+  baiSgk: number;
+  tenBai: string | null;
+  skills: SkillCatalogSkill[];
+}
+
+export interface SkillCatalogChuong {
+  chuongSgk: string;
+  bais: SkillCatalogBai[];
+}
+
+export interface DiagnosticExercise {
+  id: string;
+  skillCode: string;
+  difficulty: DiagnosticDifficulty;
+  question: string;
+  options: string[];
+  answer: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+// --- Student-facing chuong/bai catalog + practice + AI report ---
+// Field names in StudentStepResult/ClassTopicReport mirror the external KT
+// model API's own Vietnamese-no-diacritics JSON keys verbatim — see
+// backend/src/knowledge-tracing/knowledge-tracing.types.ts.
+
+export interface StudentCatalogBai {
+  baiSgk: number;
+  questionCount: number;
+}
+
+export interface StudentCatalogChuong {
+  chuongSgk: string;
+  bai: StudentCatalogBai[];
+}
+
+export interface DiagnosticAttemptResult {
+  correct: boolean;
+  correctAnswer: string;
+}
+
+export interface StudentStepResult {
+  bai_tap: string;
+  phan_tram_hieu: number;
+  muc_do: 'Can chu y' | 'Chua chac chan' | 'Co ve vung';
+  canh_bao: boolean;
+  tien_de_thieu: string[];
+}
+
+export interface ClassTopicReport {
+  chu_de: string;
+  so_hoc_sinh: number;
+  ty_le_do: number;
+  ty_le_vang: number;
+  ty_le_xanh: number;
+  muc_do_hieu_trung_binh: number;
+}
