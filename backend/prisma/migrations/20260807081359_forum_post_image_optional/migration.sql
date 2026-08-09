@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "ForumPost" ALTER COLUMN "imageUrl" DROP NOT NULL,
+ALTER COLUMN "imageHash" DROP NOT NULL;

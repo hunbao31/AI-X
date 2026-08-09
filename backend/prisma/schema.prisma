@@ -1,0 +1,395 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String              @id @default(uuid())
+  email             String?             @unique
+  passwordHash      String
+  role              Role                @default(student)
+  createdAt         DateTime            @default(now())
+  username          String              @unique
+  theme             Theme               @default(dark)
+  avatar            String              @default("koaly_default")
+  attempts          Attempt[]
+  taughtClasses     Class[]             @relation("ClassTeacher")
+  classMemberships  ClassMember[]
+  createdExercises  Exercise[]
+  createdSets       ExerciseSet[]
+  diagnosticExercises DiagnosticExercise[]
+  diagnosticAttempts  DiagnosticAttempt[]
+  reviewedDiagnosticAttempts DiagnosticAttempt[] @relation("DiagnosticAttemptReviewer")
+  favoriteQuestions FavoriteQuestion[]
+  forumAnswers      ForumAnswer[]
+  forumUpvotes      ForumAnswerUpvote[]
+  forumPosts        ForumPost[]
+  gamification      Gamification?
+  masteries         Mastery[]
+  notifications     Notification[]
+  quizAttempts      QuizAttempt[]
+}
+
+model Class {
+  id         String        @id @default(uuid())
+  name       String
+  code       String        @unique
+  teacherId  String
+  createdAt  DateTime      @default(now())
+  teacher    User          @relation("ClassTeacher", fields: [teacherId], references: [id])
+  members    ClassMember[]
+  sets       ExerciseSet[]
+  forumPosts ForumPost[]
+  topics     Topic[]
+}
+
+model ClassMember {
+  id       String   @id @default(uuid())
+  userId   String
+  classId  String
+  role     Role     @default(student)
+  joinedAt DateTime @default(now())
+  class    Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, classId])
+  @@index([classId])
+}
+
+model Topic {
+  id         String      @id @default(uuid())
+  name       String
+  classId    String
+  createdAt  DateTime    @default(now())
+  exercises  Exercise[]
+  forumPosts ForumPost[]
+  class      Class       @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, name])
+}
+
+model Exercise {
+  id          String             @id @default(uuid())
+  question    String
+  type        ExerciseType
+  options     Json?
+  answer      String
+  difficulty  Difficulty
+  topic       String
+  createdBy   String
+  createdAt   DateTime           @default(now())
+  topicId     String?
+  tags        String[]           @default([])
+  // Chi ap dung khi topicId la null (cau hoi tu do, khong gan lop) -- cau
+  // hoi gan voi 1 topicId da rieng tu cho lop do roi (xem
+  // ExercisesService.isVisible), khong dung isPublic. Default true de giu
+  // nguyen hanh vi cua cac dong da co truoc migration nay.
+  isPublic    Boolean            @default(true)
+  creator     User               @relation(fields: [createdBy], references: [id])
+  topicRef    Topic?             @relation(fields: [topicId], references: [id])
+  setItems    ExerciseSetItem[]
+  favoritedBy FavoriteQuestion[]
+}
+
+// Câu hỏi chẩn đoán gắn với 1 kỹ năng (skillCode) trong bảng SkillCatalog
+// bên dưới — khác với Exercise (bộ câu hỏi tự do theo topic) và không dùng
+// chung enum Difficulty vì UI chẩn đoán dùng nhãn tiếng Việt riêng
+// (de/trung_binh/kho).
+model DiagnosticExercise {
+  id         String               @id @default(uuid())
+  skillCode  String
+  difficulty DiagnosticDifficulty
+  question   String
+  answerType DiagnosticAnswerType @default(mcq)
+  // Trac nghiem A/B/C/D -- toi thieu 2 lua chon. answer luu dung NOI DUNG
+  // lua chon dung (khop quy uoc Exercise.answer/options da co san), khong
+  // luu chi so/chu cai. Ca 2 bat buoc o tang service khi answerType=mcq,
+  // bo trong khi tu_luan (dapAnMau dam nhan vai tro do thay).
+  options    Json?
+  answer     String?
+  // Chi dung khi answerType=tu_luan -- cau tra loi mau giao vien nhap, dung
+  // de so sanh do tuong dong (xem KnowledgeTracingService/similarity
+  // microservice o Buoc 2).
+  dapAnMau   String?
+  createdBy  String
+  createdAt  DateTime             @default(now())
+  creator    User                 @relation(fields: [createdBy], references: [id])
+  attempts   DiagnosticAttempt[]
+
+  @@index([skillCode])
+}
+
+enum DiagnosticAnswerType {
+  mcq
+  tu_luan
+}
+
+// 1 lượt học sinh trả lời 1 DiagnosticExercise. Không gắn classId — chương
+// trình SGK dùng chung cho mọi lớp, nên lịch sử làm bài là toàn cục theo
+// học sinh; thứ tự createdAt chính là chuỗi tương tác đưa vào model KT
+// (interactions: [skillCode, correct][]) khi tính bao_cao/du_doan — CHI
+// LAY CAC DONG DA CO KET QUA CUOI CUNG (correct != null), xem
+// DiagnosticService.getMyReport/getClassReport/getClassStudentReports.
+model DiagnosticAttempt {
+  id                     String             @id @default(uuid())
+  userId                 String
+  diagnosticExerciseId   String
+  skillCode              String
+  answer                 String
+  // null = tu_luan dang cho giao vien duyet (chua co ket qua cuoi cung).
+  // mcq luon co gia tri ngay (true/false), khong bao gio null.
+  correct                Boolean?
+  // Chi co khi answerType=tu_luan -- diem tuong dong PhoBERT, CHI de tham
+  // khao cho giao vien, KHONG dung truc tiep de tinh diem_vung.
+  similarityScore        Float?
+  needsTeacherReview     Boolean            @default(false)
+  teacherReviewedCorrect Boolean?
+  reviewedAt             DateTime?
+  reviewedBy             String?
+  createdAt              DateTime           @default(now())
+  user                   User               @relation(fields: [userId], references: [id])
+  reviewer               User?              @relation("DiagnosticAttemptReviewer", fields: [reviewedBy], references: [id])
+  exercise               DiagnosticExercise @relation(fields: [diagnosticExerciseId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([skillCode])
+  @@index([needsTeacherReview])
+}
+
+// Danh muc ky nang (bai tap) Toan lop 10 -- nguon du lieu DUY NHAT cho danh
+// muc chan doan (khong con file tinh skill-catalog.data.ts song song nua, da
+// xoa; xem prisma/seed-skill-catalog.ts de biet cach sinh/cap nhat). skillCode
+// khop truc tiep voi exercise_to_id trong exercise_map.json cua
+// kt_model_service, KHONG dung FK toi DiagnosticExercise.skillCode (van la
+// string tu do, kiem tra qua bang nay -- xem diagnostic.service.ts).
+model SkillCatalog {
+  id           String       @id @default(uuid())
+  skillCode    String       @unique
+  vnName       String
+  chuongSgk    String
+  baiSgk       Int
+  priorityTier PriorityTier
+  needsVnName  Boolean      @default(false)
+  prereqCount  Int          @default(0)
+  createdAt    DateTime     @default(now())
+
+  @@index([baiSgk])
+  @@index([priorityTier])
+}
+
+model ExerciseSet {
+  id                   String            @id @default(uuid())
+  title                String
+  description          String?
+  classId              String?
+  isPublic             Boolean           @default(false)
+  timeLimitPerQuestion Int?
+  roomCode             String?           @unique
+  createdBy            String
+  createdAt            DateTime          @default(now())
+  accessCode           String?
+  isPublished          Boolean           @default(true)
+  mode                 QuizMode          @default(practice)
+  shuffleQuestions     Boolean           @default(false)
+  shuffleAnswers       Boolean           @default(false)
+  totalTimeLimit       Int?
+  class                Class?            @relation(fields: [classId], references: [id])
+  creator              User              @relation(fields: [createdBy], references: [id])
+  items                ExerciseSetItem[]
+  attempts             QuizAttempt[]
+}
+
+model ExerciseSetItem {
+  id         String      @id @default(uuid())
+  setId      String
+  exerciseId String
+  order      Int
+  exercise   Exercise    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  set        ExerciseSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@unique([setId, exerciseId])
+  @@index([setId, order])
+}
+
+model QuizAttempt {
+  id                String      @id @default(uuid())
+  setId             String
+  userId            String
+  score             Int         @default(0)
+  correctCount      Int         @default(0)
+  totalCount        Int         @default(0)
+  startedAt         DateTime    @default(now())
+  completedAt       DateTime?
+  answers           Json        @default("[]")
+  lastQuestionIndex Int         @default(0)
+  durationSeconds   Int?
+  set               ExerciseSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  user              User        @relation(fields: [userId], references: [id])
+
+  @@index([setId, score])
+  @@index([userId, completedAt])
+}
+
+model FavoriteQuestion {
+  id         String   @id @default(uuid())
+  userId     String
+  exerciseId String
+  createdAt  DateTime @default(now())
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, exerciseId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+model Attempt {
+  id                 String             @id @default(uuid())
+  userId             String
+  exerciseId         String
+  topic              String
+  answer             String
+  correct            Boolean
+  understandingLevel UnderstandingLevel
+  createdAt          DateTime           @default(now())
+  user               User               @relation(fields: [userId], references: [id])
+}
+
+model Mastery {
+  id        String   @id @default(uuid())
+  userId    String
+  topic     String
+  score     Int
+  attempts  Int
+  topicId   String?
+  updatedAt DateTime @default(now()) @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, topic])
+}
+
+model Gamification {
+  id             String  @id @default(uuid())
+  userId         String  @unique
+  xp             Int
+  level          Int
+  streak         Int
+  lastActiveDate String?
+  user           User    @relation(fields: [userId], references: [id])
+}
+
+model ForumPost {
+  id                String        @id @default(uuid())
+  // Optional — a post needs a description (required), image is a bonus.
+  imageUrl          String?
+  imageHash         String?
+  description       String?
+  authorId          String
+  topicId           String?
+  classId           String?
+  answerCount       Int           @default(0)
+  rewardScore       Int           @default(0)
+  hasAcceptedAnswer Boolean       @default(false)
+  createdAt         DateTime      @default(now())
+  answers           ForumAnswer[]
+  author            User          @relation(fields: [authorId], references: [id])
+  class             Class?        @relation(fields: [classId], references: [id])
+  topic             Topic?        @relation(fields: [topicId], references: [id])
+
+  @@index([classId, createdAt])
+  @@index([classId, answerCount])
+  @@index([classId, rewardScore])
+  @@index([topicId])
+  @@index([authorId, createdAt])
+  @@index([authorId, imageHash])
+}
+
+model ForumAnswer {
+  id          String              @id @default(uuid())
+  content     String
+  imageUrl    String?
+  authorId    String
+  postId      String
+  isAccepted  Boolean             @default(false)
+  upvoteCount Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  author      User                @relation(fields: [authorId], references: [id])
+  post        ForumPost           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  upvotes     ForumAnswerUpvote[]
+
+  @@index([postId, isAccepted, upvoteCount])
+  @@index([authorId, createdAt])
+}
+
+model ForumAnswerUpvote {
+  id        String      @id @default(uuid())
+  userId    String
+  answerId  String
+  createdAt DateTime    @default(now())
+  answer    ForumAnswer @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, answerId])
+  @@index([answerId])
+}
+
+enum Role {
+  student
+  teacher
+  admin
+}
+
+enum Theme {
+  light
+  dark
+}
+
+enum ExerciseType {
+  mcq
+  text
+}
+
+enum Difficulty {
+  easy
+  medium
+  hard
+}
+
+enum QuizMode {
+  practice
+  exam
+}
+
+enum UnderstandingLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum DiagnosticDifficulty {
+  de
+  trung_binh
+  kho
+}
+
+enum PriorityTier {
+  cao
+  trung_binh
+  thap
+}
