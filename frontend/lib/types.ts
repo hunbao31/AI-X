@@ -302,13 +302,18 @@ export interface AttemptResult {
   gamification?: GamificationSummary;
 }
 
-export interface PendingAttemptReviewItem {
+export interface PendingReviewSubmission {
   attemptId: string;
   studentUsername: string;
-  question: string;
-  correctAnswer: string;
   studentAnswer: string;
   createdAt: string;
+}
+
+export interface PendingAttemptReviewGroup {
+  exerciseId: string;
+  question: string;
+  correctAnswer: string;
+  submissions: PendingReviewSubmission[];
 }
 
 export interface UserProfile extends PublicUser {

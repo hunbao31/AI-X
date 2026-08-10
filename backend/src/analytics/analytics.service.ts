@@ -37,20 +37,27 @@ export interface SetAnalytics {
 
 type UnderstandingLevel = 'LOW' | 'MEDIUM' | 'HIGH';
 
-export interface PendingAttemptReviewItem {
+export interface PendingReviewSubmission {
   attemptId: string;
   studentUsername: string;
-  question: string;
-  correctAnswer: string;
   studentAnswer: string;
   createdAt: Date;
 }
 
-export interface AttemptForReview {
-  id: string;
-  userId: string;
-  topic: string;
+export interface PendingAttemptReviewGroup {
+  exerciseId: string;
+  question: string;
+  correctAnswer: string;
+  submissions: PendingReviewSubmission[];
+}
+
+export interface GroupForReview {
   exercise: { createdBy: string; topicId: string | null };
+  // Chi nhung attempt CON dang cho duyet tai thoi diem doc -- neu 1 hoc
+  // sinh vua nop them cau tra loi khac giua luc giao vien dang xem trang,
+  // dong moi do se KHONG bi cuon vao lan duyet nay (doc lai truoc khi ap
+  // dung, xem applyGroupReview).
+  attempts: { id: string; userId: string; topic: string }[];
 }
 
 function round2(value: number): number {
@@ -97,9 +104,10 @@ export class AnalyticsService {
 
   // Tat ca cau tu luan dang cho duyet, gioi han trong nhung Exercise do
   // chinh giao vien nay tao (khong theo lop, vi Exercise tao qua "Tao de"
-  // khong bat buoc gan lop) -- sap xep cu nhat truoc, giong pattern cua
-  // DiagnosticService.getPendingReview.
-  async getPendingReviewForTeacher(teacherId: string): Promise<PendingAttemptReviewItem[]> {
+  // khong bat buoc gan lop) -- gom theo exerciseId (cung 1 cau hoi) de giao
+  // vien duyet 1 lan cho ca nhom thay vi tung dong rieng le (do thoi gian
+  // cham). Nhom nao co bai nop cu nhat se len truoc.
+  async getPendingReviewForTeacher(teacherId: string): Promise<PendingAttemptReviewGroup[]> {
     const exercises = await this.prisma.exercise.findMany({
       where: { createdBy: teacherId, type: 'text' },
       select: { id: true, question: true, answer: true },
@@ -119,41 +127,64 @@ export class AnalyticsService {
       },
     });
 
-    return attempts.map((a) => ({
-      attemptId: a.id,
-      studentUsername: a.user.username,
-      question: byId.get(a.exerciseId)?.question ?? '',
-      correctAnswer: byId.get(a.exerciseId)?.answer ?? '',
-      studentAnswer: a.answer,
-      createdAt: a.createdAt,
-    }));
+    const groups = new Map<string, PendingAttemptReviewGroup>();
+    for (const a of attempts) {
+      let group = groups.get(a.exerciseId);
+      if (!group) {
+        group = {
+          exerciseId: a.exerciseId,
+          question: byId.get(a.exerciseId)?.question ?? '',
+          correctAnswer: byId.get(a.exerciseId)?.answer ?? '',
+          submissions: [],
+        };
+        groups.set(a.exerciseId, group);
+      }
+      group.submissions.push({
+        attemptId: a.id,
+        studentUsername: a.user.username,
+        studentAnswer: a.answer,
+        createdAt: a.createdAt,
+      });
+    }
+    // Nhom co bai nop cu nhat len truoc (theo submission dau tien cua nhom).
+    return [...groups.values()].sort(
+      (x, y) => x.submissions[0].createdAt.getTime() - y.submissions[0].createdAt.getTime(),
+    );
   }
 
   // Attempt khong co quan he Prisma toi Exercise (chi luu exerciseId roi),
   // nen ghep thu cong o day thay vi include -- controller dung ket qua nay
   // de kiem tra quyen so huu (exercise.createdBy) truoc khi cho duyet.
-  async getAttemptForReview(attemptId: string): Promise<AttemptForReview | null> {
-    const attempt = await this.prisma.attempt.findUnique({
-      where: { id: attemptId },
-      select: { id: true, userId: true, topic: true, exerciseId: true, needsTeacherReview: true },
-    });
-    if (!attempt || !attempt.needsTeacherReview) return null;
-
+  async getGroupForReview(exerciseId: string): Promise<GroupForReview | null> {
     const exercise = await this.prisma.exercise.findUnique({
-      where: { id: attempt.exerciseId },
+      where: { id: exerciseId },
       select: { createdBy: true, topicId: true },
     });
     if (!exercise) return null;
 
-    return { id: attempt.id, userId: attempt.userId, topic: attempt.topic, exercise };
+    const attempts = await this.prisma.attempt.findMany({
+      where: { exerciseId, needsTeacherReview: true },
+      select: { id: true, userId: true, topic: true },
+    });
+
+    return { exercise, attempts };
   }
 
-  async applyReview(attemptId: string, correct: boolean, reviewerId: string): Promise<void> {
-    await this.prisma.attempt.update({
-      where: { id: attemptId },
+  // Duyet ca nhom cung luc -- dung/sai + nhan xet ap dung cho TOAN BO hoc
+  // sinh dang cho duyet cau hoi nay tai thoi diem goi (chi id da doc o
+  // getGroupForReview, tranh cuon vao bai nop moi sau khi giao vien da xem).
+  async applyGroupReview(
+    attemptIds: string[],
+    correct: boolean,
+    comment: string | null,
+    reviewerId: string,
+  ): Promise<void> {
+    await this.prisma.attempt.updateMany({
+      where: { id: { in: attemptIds } },
       data: {
         correct,
         understandingLevel: correct ? 'HIGH' : 'LOW',
+        teacherComment: comment,
         needsTeacherReview: false,
         reviewedAt: new Date(),
         reviewedBy: reviewerId,

@@ -5,7 +5,6 @@ import {
   HttpCode,
   HttpException,
   HttpStatus,
-  Param,
   Post,
   Req,
   UseGuards,
@@ -144,26 +143,36 @@ export class AttemptsController {
     return ok(await this.analyticsService.getPendingReviewForTeacher(req.user.sub));
   }
 
-  // Giao vien duyet 1 cau tu luan -- ap dung dung/sai, roi moi tinh
-  // mastery + XP (bi hoan lai luc submit vi chua co ket qua).
-  @Post(':id/review')
+  // Giao vien duyet TOAN BO hoc sinh dang cho duyet 1 cau hoi cung luc --
+  // 1 verdict dung/sai + 1 nhan xet ap dung chung ca nhom, roi moi tinh
+  // mastery + XP cho tung hoc sinh (bi hoan lai luc submit vi chua co ket
+  // qua). Do thoi gian cham cho giao vien khi nhieu hoc sinh cung tra loi
+  // 1 cau.
+  @Post('review-group')
   @HttpCode(200)
   @UseGuards(RolesGuard)
   @Roles('teacher')
-  async review(
-    @Param('id') id: string,
-    @Body() body: { correct?: boolean },
+  async reviewGroup(
+    @Body() body: { exerciseId?: string; correct?: boolean; comment?: string },
     @Req() req: { user: AuthenticatedUser },
   ) {
-    if (typeof body?.correct !== 'boolean') {
-      throw apiError('VALIDATION_ERROR', 'correct là bắt buộc.', HttpStatus.UNPROCESSABLE_ENTITY);
+    if (!body?.exerciseId || typeof body.correct !== 'boolean') {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'exerciseId và correct là bắt buộc.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
     }
 
-    const attempt = await this.analyticsService.getAttemptForReview(id);
-    if (!attempt) {
-      throw apiError('ATTEMPT_NOT_FOUND', 'Lượt làm bài không tồn tại hoặc đã được duyệt.', HttpStatus.NOT_FOUND);
+    const group = await this.analyticsService.getGroupForReview(body.exerciseId);
+    if (!group || group.attempts.length === 0) {
+      throw apiError(
+        'GROUP_NOT_FOUND',
+        'Không còn câu trả lời nào đang chờ duyệt cho câu hỏi này.',
+        HttpStatus.NOT_FOUND,
+      );
     }
-    if (req.user.role !== 'admin' && attempt.exercise.createdBy !== req.user.sub) {
+    if (req.user.role !== 'admin' && group.exercise.createdBy !== req.user.sub) {
       throw apiError(
         'FORBIDDEN',
         'Bạn chỉ có thể duyệt câu hỏi do mình tạo.',
@@ -171,17 +180,25 @@ export class AttemptsController {
       );
     }
 
-    await this.analyticsService.applyReview(id, body.correct, req.user.sub);
+    const comment = body.comment?.trim() || null;
+    await this.analyticsService.applyGroupReview(
+      group.attempts.map((a) => a.id),
+      body.correct,
+      comment,
+      req.user.sub,
+    );
 
     const understandingLevel = body.correct ? 'HIGH' : 'LOW';
-    await this.masteryStore.recordAttempt(
-      attempt.userId,
-      attempt.topic,
-      understandingLevel,
-      attempt.exercise.topicId,
-    );
-    await this.gamificationService.recordAttempt(attempt.userId, body.correct);
+    for (const attempt of group.attempts) {
+      await this.masteryStore.recordAttempt(
+        attempt.userId,
+        attempt.topic,
+        understandingLevel,
+        group.exercise.topicId,
+      );
+      await this.gamificationService.recordAttempt(attempt.userId, body.correct);
+    }
 
-    return ok({ id, correct: body.correct });
+    return ok({ exerciseId: body.exerciseId, correct: body.correct, reviewedCount: group.attempts.length });
   }
 }

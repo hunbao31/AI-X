@@ -272,6 +272,10 @@ model Attempt {
   correct            Boolean?
   understandingLevel UnderstandingLevel?
   needsTeacherReview Boolean             @default(false)
+  // Nhan xet chung khi duyet ca nhom (xem AnalyticsService.applyGroupReview)
+  // -- moi lan duyet 1 cau hoi la ap dung cho TOAN BO hoc sinh dang cho
+  // duyet cau do cung luc, khong duyet tung dong rieng le nua.
+  teacherComment     String?
   reviewedAt         DateTime?
   reviewedBy         String?
   createdAt          DateTime            @default(now())
