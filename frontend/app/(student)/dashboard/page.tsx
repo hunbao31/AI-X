@@ -294,9 +294,6 @@ export default function DashboardPage() {
                       <Button>Bắt đầu ngay →</Button>
                     </Link>
                   </motion.div>
-                  <Link href="/quick-quiz">
-                    <Button variant="secondary">🎲 Trắc nghiệm nhanh</Button>
-                  </Link>
                 </div>
               </div>
               {recent?.lastQuiz && (

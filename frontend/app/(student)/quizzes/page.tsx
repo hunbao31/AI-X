@@ -1,79 +1,118 @@
 'use client';
 
-import { useEffect, useState, FormEvent } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { apiGet } from '@/lib/api';
+import { apiGet, apiGetWithMeta } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import type { SetSummary } from '@/lib/types';
+import type { SetSummary, MarketplaceSet } from '@/lib/types';
+
+// Debounce search input so every keystroke doesn't fire a request.
+function useDebounced<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(timer);
+  }, [value, delayMs]);
+  return debounced;
+}
 
 export default function QuizzesPage() {
-  const router = useRouter();
   const [sets, setSets] = useState<SetSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [codeInput, setCodeInput] = useState('');
-  const [codeError, setCodeError] = useState('');
-  const [unlocking, setUnlocking] = useState(false);
 
   useEffect(() => {
     apiGet<SetSummary[]>('/api/v1/sets')
       .then(setSets)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Không thể tải danh sách trắc nghiệm.'),
+        setError(err instanceof Error ? err.message : 'Không thể tải ngân hàng câu hỏi.'),
       )
       .finally(() => setLoading(false));
   }, []);
 
-  // Private-by-code quizzes are not listed; the code is the way in.
-  async function handleUnlock(e: FormEvent) {
-    e.preventDefault();
-    const code = codeInput.trim();
-    if (!code) return;
-    setCodeError('');
-    setUnlocking(true);
-    try {
-      const found = await apiGet<{ id: string; title: string }>(
-        `/api/v1/sets/by-code/${encodeURIComponent(code)}`,
-      );
-      router.push(`/quiz/${found.id}?code=${encodeURIComponent(code)}`);
-    } catch (err) {
-      setCodeError(err instanceof Error ? err.message : 'Không tìm thấy bài trắc nghiệm nào khớp với mã đó.');
-      setUnlocking(false);
-    }
-  }
+  // Chỗ tách biệt để làm cac đề công khai không thuộc lớp học cua minh --
+  // tim kiem truc tiep tren kho de cong khai (cung endpoint marketplace cua
+  // giao vien), mo la choi luon (khong "nhap ve" nhu ben giao vien).
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounced(search, 350);
+  const [publicSets, setPublicSets] = useState<MarketplaceSet[]>([]);
+  const [publicLoading, setPublicLoading] = useState(false);
+  const [publicError, setPublicError] = useState('');
+
+  const loadPublic = useCallback((query: string) => {
+    setPublicLoading(true);
+    setPublicError('');
+    const qs = query.trim() ? `?search=${encodeURIComponent(query.trim())}` : '';
+    apiGetWithMeta<MarketplaceSet[]>(`/api/v1/sets/marketplace${qs}`)
+      .then(({ data }) => setPublicSets(data))
+      .catch((err) =>
+        setPublicError(err instanceof Error ? err.message : 'Không thể tìm đề công khai.'),
+      )
+      .finally(() => setPublicLoading(false));
+  }, []);
+
+  useEffect(() => {
+    loadPublic(debouncedSearch);
+  }, [debouncedSearch, loadPublic]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold text-white">Trắc nghiệm</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-white">Ngân hàng câu hỏi</h1>
+        <p className="mt-1 text-sm text-slate-400">
+          Bộ đề của lớp bạn, và một chỗ riêng để tìm làm các đề công khai không
+          thuộc lớp học nào — kể cả đề có phần tự luận.
+        </p>
+      </div>
 
-      <Card className="space-y-2">
-        <form onSubmit={handleUnlock} className="flex gap-2">
-          <input
-            type="text"
-            value={codeInput}
-            onChange={(e) => setCodeInput(e.target.value)}
-            placeholder="Bạn có mã bài trắc nghiệm? Nhập vào đây"
-            className="input-base flex-1"
-          />
-          <Button type="submit" variant="secondary" disabled={unlocking}>
-            {unlocking ? 'Đang mở…' : 'Mở khóa'}
-          </Button>
-        </form>
-        {codeError && <p className="text-sm text-red-400">{codeError}</p>}
+      <Card className="space-y-3">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Tìm kiếm đề công khai…"
+          className="input-base"
+        />
+        {publicError && <p className="text-sm text-red-400">{publicError}</p>}
+        {publicLoading ? (
+          <p className="text-sm text-slate-400">Đang tìm…</p>
+        ) : publicSets.length === 0 ? (
+          <p className="text-sm text-slate-400">
+            {search.trim() ? 'Không tìm thấy đề công khai nào khớp.' : 'Chưa có đề công khai nào.'}
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {publicSets.map((s) => (
+              <div
+                key={s.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 p-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-white">{s.title}</p>
+                  <span className="text-xs text-slate-400">
+                    {s._count.items} câu hỏi · bởi {s.creator.username}
+                  </span>
+                </div>
+                <Link href={`/quiz/${s.id}`}>
+                  <Button variant="secondary">Mở</Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {loading ? (
-        <p className="text-slate-400">Đang tải danh sách trắc nghiệm…</p>
+        <p className="text-slate-400">Đang tải…</p>
       ) : sets.length === 0 ? (
         <Card>
           <p className="text-slate-300">
-            Chưa có bài trắc nghiệm nào. Tham gia lớp học để xem bài trắc
-            nghiệm của lớp, hoặc quay lại sau để xem các bài công khai.
+            Chưa có bài nào trong ngân hàng của bạn. Tham gia lớp học để xem
+            bài của lớp, hoặc tìm một đề công khai ở trên.
           </p>
         </Card>
       ) : (
