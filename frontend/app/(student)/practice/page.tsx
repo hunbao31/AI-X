@@ -12,7 +12,7 @@ import { FeedbackCard } from '@/components/exercise/FeedbackCard';
 import { MathText } from '@/components/ui/MathText';
 import { useMascot } from '@/components/mascot/MascotProvider';
 import { useSounds } from '@/lib/sounds';
-import type { Exercise, AttemptResult } from '@/lib/types';
+import type { Exercise, AttemptResult, ClassSummary, ClassDetail } from '@/lib/types';
 
 function PracticePageInner() {
   const { playClick, playCorrect, playWrong } = useSounds();
@@ -20,13 +20,24 @@ function PracticePageInner() {
   // Consecutive correct answers in this practice session.
   const streakRef = useRef(0);
   const searchParams = useSearchParams();
-  // A ?topic= link (from the dashboard picker) preselects the topic, but the
-  // student still has to press Start — questions never auto-show.
+  // A ?topic= link (from the dashboard's class → topic picker) preselects
+  // the topic and skips straight past the class step below — the student
+  // already picked a class there. Questions still never auto-show, Start
+  // is still explicit.
   const topicFromUrl = searchParams.get('topic');
 
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+
+  // Buoc 1 -- chon lop dang tham gia (bo qua neu da den tu link ?topic=
+  // cua dashboard, noi lop da duoc chon roi). Chu de chi lay tu lop da
+  // chon, khong con gop chung tat ca lop nhu truoc.
+  const [classes, setClasses] = useState<ClassSummary[]>([]);
+  const [classesLoading, setClassesLoading] = useState(topicFromUrl === null);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [classDetail, setClassDetail] = useState<ClassDetail | null>(null);
+  const [classDetailLoading, setClassDetailLoading] = useState(false);
 
   const [selectedTopic, setSelectedTopic] = useState<string | null>(topicFromUrl);
   // Gop trac nghiem + tu luan vao 1 luong luyen tap duy nhat -- hoc sinh tu
@@ -50,13 +61,45 @@ function PracticePageInner() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (topicFromUrl !== null) return;
+    apiGet<ClassSummary[]>('/api/v1/classes')
+      .then(setClasses)
+      .catch(() => setClasses([]))
+      .finally(() => setClassesLoading(false));
+  }, [topicFromUrl]);
+
+  function selectClass(id: string) {
+    playClick();
+    setSelectedClassId(id);
+    setSelectedTopic(null);
+    setClassDetailLoading(true);
+    apiGet<ClassDetail>(`/api/v1/classes/${id}`)
+      .then(setClassDetail)
+      .catch(() => setClassDetail(null))
+      .finally(() => setClassDetailLoading(false));
+  }
+
+  function changeClass() {
+    playClick();
+    setSelectedClassId(null);
+    setClassDetail(null);
+    setSelectedTopic(null);
+  }
+
   const typeFilteredExercises = useMemo(
     () => (typeFilter === 'all' ? exercises : exercises.filter((e) => e.type === typeFilter)),
     [exercises, typeFilter],
   );
+  // Topic dua tren lop da chon (ten chu de van la khoa dung chung voi
+  // Exercise.topic, giong het co che ?topic= tu dashboard) -- an di nhung
+  // chu de khong co bai tap nao khop loai dang loc.
   const topics = useMemo(
-    () => [...new Set(typeFilteredExercises.map((e) => e.topic))],
-    [typeFilteredExercises],
+    () =>
+      (classDetail?.topics ?? [])
+        .map((t) => t.name)
+        .filter((name) => typeFilteredExercises.some((e) => e.topic === name)),
+    [classDetail, typeFilteredExercises],
   );
   const topicExercises = useMemo(
     () => typeFilteredExercises.filter((e) => e.topic === selectedTopic),
@@ -146,11 +189,57 @@ function PracticePageInner() {
             Chưa có bài tập nào — giáo viên của bạn chưa tạo nội dung nào.
           </p>
         </Card>
-      ) : !started ? (
-        // --- Selection phase: pick a topic, then explicitly press Start.
-        // No exercise content is fetched or shown until this happens.
+      ) : !started && topicFromUrl === null && !selectedClassId ? (
+        // --- Step 1: pick which of your classes you want to practice.
         <Card className="space-y-5">
-          <h1 className="text-xl font-semibold text-white">Chọn chủ đề để luyện tập</h1>
+          <h1 className="text-xl font-semibold text-white">Chọn lớp học để luyện tập</h1>
+          {classesLoading ? (
+            <p className="text-sm text-slate-400">Đang tải lớp học…</p>
+          ) : classes.length === 0 ? (
+            <p className="text-sm text-slate-300">
+              Bạn chưa tham gia lớp học nào — hãy hỏi giáo viên để lấy mã tham
+              gia, hoặc tìm bài luyện tập công khai ở{' '}
+              <a href="/quizzes" className="text-indigo-300 hover:text-indigo-200">
+                Ngân hàng câu hỏi
+              </a>
+              .
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {classes.map((c) => (
+                <motion.button
+                  key={c.id}
+                  type="button"
+                  onClick={() => selectClass(c.id)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="rounded-xl border border-white/15 bg-white/5 p-4 text-left transition-colors duration-200 hover:bg-white/10"
+                >
+                  <p className="font-medium text-white">{c.name}</p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Giáo viên: {c.teacher.username} · {c._count.topics} chủ đề
+                  </p>
+                </motion.button>
+              ))}
+            </div>
+          )}
+        </Card>
+      ) : !started ? (
+        // --- Step 2: pick a topic within the chosen class, then explicitly
+        // press Start. No exercise content is fetched or shown until then.
+        <Card className="space-y-5">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-semibold text-white">Chọn chủ đề để luyện tập</h1>
+            {topicFromUrl === null && (
+              <button
+                type="button"
+                onClick={changeClass}
+                className="text-xs font-medium uppercase tracking-wide text-slate-400 hover:text-slate-200"
+              >
+                ← Đổi lớp
+              </button>
+            )}
+          </div>
 
           <div>
             <p className="mb-2 text-sm font-medium text-slate-300">Loại câu hỏi</p>
@@ -181,28 +270,36 @@ function PracticePageInner() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {topics.map((t) => (
-              <motion.button
-                key={t}
-                type="button"
-                onClick={() => {
-                  playClick();
-                  setSelectedTopic(t);
-                }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors duration-200 ${
-                  t === selectedTopic
-                    ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
-                    : 'border border-white/15 bg-white/5 text-slate-300 hover:bg-white/10'
-                }`}
-              >
-                {t}
-              </motion.button>
-            ))}
-          </div>
+          {classDetailLoading ? (
+            <p className="text-sm text-slate-400">Đang tải chủ đề…</p>
+          ) : topics.length === 0 ? (
+            <p className="text-sm text-slate-400">
+              Lớp này chưa có chủ đề nào khớp loại câu hỏi đã chọn.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {topics.map((t) => (
+                <motion.button
+                  key={t}
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    setSelectedTopic(t);
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                  className={`rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors duration-200 ${
+                    t === selectedTopic
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
+                      : 'border border-white/15 bg-white/5 text-slate-300 hover:bg-white/10'
+                  }`}
+                >
+                  {t}
+                </motion.button>
+              ))}
+            </div>
+          )}
           <Button onClick={handleStart} disabled={!selectedTopic} className="w-full">
             Bắt đầu
           </Button>
