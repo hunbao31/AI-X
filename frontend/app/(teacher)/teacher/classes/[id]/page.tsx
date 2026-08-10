@@ -9,17 +9,11 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
-import {
-  ExerciseForm,
-  ExercisePayload,
-} from '@/components/exercise/ExerciseForm';
-import { ImportQuestions } from '@/components/exercise/ImportQuestions';
 import type {
   ClassDetail,
   TopicInfo,
   SkillCatalogChuong,
   ClassStudentReport,
-  Exercise,
   SetSummary,
 } from '@/lib/types';
 
@@ -67,37 +61,6 @@ export default function TeacherClassDetailPage() {
   const [selectedBai, setSelectedBai] = useState<number | ''>('');
   const [addingTopic, setAddingTopic] = useState(false);
   const [topicError, setTopicError] = useState('');
-
-  // Which topic's inline "create exercise" panel is open — only one at a
-  // time, and the form remounts (via formKey) after each successful create
-  // so a teacher can add several questions in a row without stale fields.
-  const [expandedTopicId, setExpandedTopicId] = useState<string | null>(null);
-  const [importMode, setImportMode] = useState(false);
-  const [formKey, setFormKey] = useState(0);
-  const [exerciseSubmitting, setExerciseSubmitting] = useState(false);
-  const [exerciseError, setExerciseError] = useState('');
-
-  // Danh sach cau hoi da co trong topic dang mo -- tai lai moi lan mo panel
-  // hoac sau khi them/nhap thanh cong, de giao vien thay ngay ket qua.
-  const [topicExercises, setTopicExercises] = useState<Exercise[]>([]);
-  const [topicExercisesLoading, setTopicExercisesLoading] = useState(false);
-
-  const loadTopicExercises = useCallback((topicId: string) => {
-    setTopicExercisesLoading(true);
-    apiGet<Exercise[]>(`/api/v1/exercises?topicId=${topicId}`)
-      .then(setTopicExercises)
-      .catch(() => setTopicExercises([]))
-      .finally(() => setTopicExercisesLoading(false));
-  }, []);
-
-  function toggleTopic(topicId: string) {
-    setExpandedTopicId((prev) => {
-      const next = prev === topicId ? null : topicId;
-      if (next) loadTopicExercises(next);
-      return next;
-    });
-    setImportMode(false);
-  }
 
   const load = useCallback(() => {
     apiGet<ClassDetail>(`/api/v1/classes/${classId}`)
@@ -194,41 +157,21 @@ export default function TeacherClassDetailPage() {
     const name = topicNameFor(selectedChuong, selectedBai, tenBai);
     const existing = detail?.topics.find((t) => t.name === name);
     if (existing) {
-      // Bài này đã có chủ đề trong lớp — mở luôn panel tạo bài tập, khỏi
+      // Bài này đã có chủ đề trong lớp — vào thẳng trang chủ đề đó, khỏi
       // gọi API tạo trùng rồi phải xử lý lỗi TOPIC_ALREADY_EXISTS.
-      setSelectedChuong('');
-      setSelectedBai('');
-      setExpandedTopicId(existing.id);
+      router.push(`/teacher/classes/${classId}/topics/${existing.id}`);
       return;
     }
 
     setAddingTopic(true);
     try {
       const created = await apiPost<TopicInfo>('/api/v1/topics', { name, classId });
-      setSelectedChuong('');
-      setSelectedBai('');
-      load();
-      setExpandedTopicId(created.id);
-      setFormKey((k) => k + 1);
+      // Thang vao trang chu de moi tao, giong het tao bo de xong la vao
+      // thang /teacher/sets/:id.
+      router.push(`/teacher/classes/${classId}/topics/${created.id}`);
     } catch (err) {
       setTopicError(err instanceof Error ? err.message : 'Không thể thêm chủ đề.');
-    } finally {
       setAddingTopic(false);
-    }
-  }
-
-  async function handleCreateExercise(payload: ExercisePayload) {
-    setExerciseError('');
-    setExerciseSubmitting(true);
-    try {
-      await apiPost('/api/v1/exercises', payload);
-      setFormKey((k) => k + 1);
-      load();
-      if (expandedTopicId) loadTopicExercises(expandedTopicId);
-    } catch (err) {
-      setExerciseError(err instanceof Error ? err.message : 'Không thể tạo bài tập.');
-    } finally {
-      setExerciseSubmitting(false);
     }
   }
 
@@ -333,109 +276,16 @@ export default function TeacherClassDetailPage() {
           </p>
         ) : (
           <div className="space-y-2">
-            {detail.topics.map((t) => {
-              const isOpen = expandedTopicId === t.id;
-              return (
-                <div key={t.id} className="rounded-xl border border-white/10 bg-white/5">
-                  <button
-                    type="button"
-                    onClick={() => toggleTopic(t.id)}
-                    className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left"
-                  >
-                    <span className="text-sm font-medium text-slate-200">{t.name}</span>
-                    <span className="flex shrink-0 items-center gap-3">
-                      <span className="text-xs text-slate-500">
-                        {t._count.exercises} bài tập
-                      </span>
-                      <span className="text-xs font-medium text-indigo-300">
-                        {isOpen ? 'Đóng' : '+ Bài tập'}
-                      </span>
-                    </span>
-                  </button>
-                  {isOpen && (
-                    <div className="space-y-4 border-t border-white/10 p-4">
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                          Câu hỏi đã thêm
-                        </p>
-                        {topicExercisesLoading ? (
-                          <p className="text-xs text-slate-500">Đang tải…</p>
-                        ) : topicExercises.length === 0 ? (
-                          <p className="text-xs text-slate-500">Chưa có câu hỏi nào trong chủ đề này.</p>
-                        ) : (
-                          <div className="space-y-1.5">
-                            {topicExercises.map((ex) => (
-                              <div
-                                key={ex.id}
-                                className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
-                              >
-                                <span className="min-w-0 flex-1 truncate text-sm text-slate-300">
-                                  {ex.question}
-                                </span>
-                                <Link
-                                  href={`/teacher/exercises/${ex.id}/edit`}
-                                  className="shrink-0 text-xs font-medium text-indigo-300 hover:text-indigo-200"
-                                >
-                                  Chỉnh sửa
-                                </Link>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setImportMode(false)}
-                          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                            !importMode
-                              ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-400/40'
-                              : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 hover:text-white'
-                          }`}
-                        >
-                          Từng câu
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setImportMode(true)}
-                          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                            importMode
-                              ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-400/40'
-                              : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 hover:text-white'
-                          }`}
-                        >
-                          Nhập CSV/Excel
-                        </button>
-                      </div>
-                      {importMode ? (
-                        <ImportQuestions
-                          key={formKey}
-                          lockedClassId={classId}
-                          lockedTopicId={t.id}
-                          onImported={() => {
-                            setFormKey((k) => k + 1);
-                            load();
-                            if (expandedTopicId) loadTopicExercises(expandedTopicId);
-                          }}
-                        />
-                      ) : (
-                        <ExerciseForm
-                          key={formKey}
-                          lockedClassId={classId}
-                          lockedTopicId={t.id}
-                          submitLabel="Thêm bài tập vào chủ đề"
-                          submittingLabel="Đang tạo…"
-                          submitting={exerciseSubmitting}
-                          error={exerciseError}
-                          onSubmit={handleCreateExercise}
-                        />
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {detail.topics.map((t) => (
+              <Link
+                key={t.id}
+                href={`/teacher/classes/${classId}/topics/${t.id}`}
+                className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 hover:bg-white/10"
+              >
+                <span className="text-sm font-medium text-slate-200">{t.name}</span>
+                <span className="text-xs text-slate-500">{t._count.exercises} bài tập</span>
+              </Link>
+            ))}
           </div>
         )}
       </Card>

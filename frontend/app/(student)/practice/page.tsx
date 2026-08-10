@@ -21,25 +21,22 @@ function PracticePageInner() {
   const streakRef = useRef(0);
   const searchParams = useSearchParams();
   // A ?topic= link (from the dashboard's class → topic picker) preselects
-  // the topic and skips straight past the class step below — the student
-  // already picked a class there. Questions still never auto-show, Start
-  // is still explicit.
+  // that one topic — the student still has to press Start.
   const topicFromUrl = searchParams.get('topic');
 
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
-  // Buoc 1 -- chon lop dang tham gia (bo qua neu da den tu link ?topic=
-  // cua dashboard, noi lop da duoc chon roi). Chu de chi lay tu lop da
-  // chon, khong con gop chung tat ca lop nhu truoc.
+  // Chu de gop tu TAT CA lop dang tham gia (khong bat chon 1 lop truoc) --
+  // 1 chu de trung ten o nhieu lop se gom chung lai thanh 1 the, chon 1 the
+  // la luyen luon bai tap tu moi lop co chu de do. Cho phep chon NHIEU chu
+  // de cung luc (hoc gop nhieu chu de 1 lan).
   const [classes, setClasses] = useState<ClassSummary[]>([]);
-  const [classesLoading, setClassesLoading] = useState(topicFromUrl === null);
-  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-  const [classDetail, setClassDetail] = useState<ClassDetail | null>(null);
-  const [classDetailLoading, setClassDetailLoading] = useState(false);
-
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(topicFromUrl);
+  const [classesLoading, setClassesLoading] = useState(true);
+  const [selectedTopics, setSelectedTopics] = useState<Set<string>>(
+    () => new Set(topicFromUrl ? [topicFromUrl] : []),
+  );
   // Gop trac nghiem + tu luan vao 1 luong luyen tap duy nhat -- hoc sinh tu
   // chon loai cau muon luyen (item 15/16), khong tach thanh 2 trang rieng.
   const [typeFilter, setTypeFilter] = useState<'mcq' | 'text' | 'all'>('all');
@@ -61,49 +58,51 @@ function PracticePageInner() {
       .finally(() => setLoading(false));
   }, []);
 
+  const [classDetails, setClassDetails] = useState<ClassDetail[]>([]);
+
   useEffect(() => {
-    if (topicFromUrl !== null) return;
+    setClassesLoading(true);
     apiGet<ClassSummary[]>('/api/v1/classes')
-      .then(setClasses)
-      .catch(() => setClasses([]))
+      .then((list) => {
+        setClasses(list);
+        return Promise.all(list.map((c) => apiGet<ClassDetail>(`/api/v1/classes/${c.id}`)));
+      })
+      .then((details) => setClassDetails(details ?? []))
+      .catch(() => {
+        setClasses([]);
+        setClassDetails([]);
+      })
       .finally(() => setClassesLoading(false));
-  }, [topicFromUrl]);
+  }, []);
 
-  function selectClass(id: string) {
+  function toggleTopic(name: string) {
     playClick();
-    setSelectedClassId(id);
-    setSelectedTopic(null);
-    setClassDetailLoading(true);
-    apiGet<ClassDetail>(`/api/v1/classes/${id}`)
-      .then(setClassDetail)
-      .catch(() => setClassDetail(null))
-      .finally(() => setClassDetailLoading(false));
-  }
-
-  function changeClass() {
-    playClick();
-    setSelectedClassId(null);
-    setClassDetail(null);
-    setSelectedTopic(null);
+    setSelectedTopics((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
   }
 
   const typeFilteredExercises = useMemo(
     () => (typeFilter === 'all' ? exercises : exercises.filter((e) => e.type === typeFilter)),
     [exercises, typeFilter],
   );
-  // Topic dua tren lop da chon (ten chu de van la khoa dung chung voi
-  // Exercise.topic, giong het co che ?topic= tu dashboard) -- an di nhung
-  // chu de khong co bai tap nao khop loai dang loc.
+  // Chu de gop tu moi lop dang tham gia, khu trung theo TEN (chinh la khoa
+  // dung chung voi Exercise.topic) -- 2 lop co chu de trung ten se gom
+  // chung thanh 1 the duy nhat. An di nhung chu de khong co bai tap nao
+  // khop loai dang loc.
   const topics = useMemo(
     () =>
-      (classDetail?.topics ?? [])
-        .map((t) => t.name)
-        .filter((name) => typeFilteredExercises.some((e) => e.topic === name)),
-    [classDetail, typeFilteredExercises],
+      [...new Set(classDetails.flatMap((cd) => cd.topics.map((t) => t.name)))].filter((name) =>
+        typeFilteredExercises.some((e) => e.topic === name),
+      ),
+    [classDetails, typeFilteredExercises],
   );
   const topicExercises = useMemo(
-    () => typeFilteredExercises.filter((e) => e.topic === selectedTopic),
-    [typeFilteredExercises, selectedTopic],
+    () => typeFilteredExercises.filter((e) => selectedTopics.has(e.topic)),
+    [typeFilteredExercises, selectedTopics],
   );
   const current = topicExercises[index] ?? null;
 
@@ -114,7 +113,7 @@ function PracticePageInner() {
   }, [started, mascot]);
 
   function handleStart() {
-    if (!selectedTopic) return;
+    if (selectedTopics.size === 0) return;
     playClick();
     setIndex(0);
     setResult(null);
@@ -127,7 +126,7 @@ function PracticePageInner() {
   function changeTopic() {
     playClick();
     setStarted(false);
-    setSelectedTopic(null);
+    setSelectedTopics(new Set());
   }
 
   function goToNext() {
@@ -177,7 +176,7 @@ function PracticePageInner() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      {loading ? (
+      {loading || classesLoading ? (
         <p className="text-center text-slate-400">Đang tải chủ đề…</p>
       ) : loadError ? (
         <Card>
@@ -189,57 +188,12 @@ function PracticePageInner() {
             Chưa có bài tập nào — giáo viên của bạn chưa tạo nội dung nào.
           </p>
         </Card>
-      ) : !started && topicFromUrl === null && !selectedClassId ? (
-        // --- Step 1: pick which of your classes you want to practice.
-        <Card className="space-y-5">
-          <h1 className="text-xl font-semibold text-white">Chọn lớp học để luyện tập</h1>
-          {classesLoading ? (
-            <p className="text-sm text-slate-400">Đang tải lớp học…</p>
-          ) : classes.length === 0 ? (
-            <p className="text-sm text-slate-300">
-              Bạn chưa tham gia lớp học nào — hãy hỏi giáo viên để lấy mã tham
-              gia, hoặc tìm bài luyện tập công khai ở{' '}
-              <a href="/quizzes" className="text-indigo-300 hover:text-indigo-200">
-                Ngân hàng câu hỏi
-              </a>
-              .
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {classes.map((c) => (
-                <motion.button
-                  key={c.id}
-                  type="button"
-                  onClick={() => selectClass(c.id)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="rounded-xl border border-white/15 bg-white/5 p-4 text-left transition-colors duration-200 hover:bg-white/10"
-                >
-                  <p className="font-medium text-white">{c.name}</p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    Giáo viên: {c.teacher.username} · {c._count.topics} chủ đề
-                  </p>
-                </motion.button>
-              ))}
-            </div>
-          )}
-        </Card>
       ) : !started ? (
-        // --- Step 2: pick a topic within the chosen class, then explicitly
-        // press Start. No exercise content is fetched or shown until then.
+        // --- Selection phase: pick one or more topics (gathered across
+        // every class that has them), then explicitly press Start. No
+        // exercise content is fetched or shown until then.
         <Card className="space-y-5">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-white">Chọn chủ đề để luyện tập</h1>
-            {topicFromUrl === null && (
-              <button
-                type="button"
-                onClick={changeClass}
-                className="text-xs font-medium uppercase tracking-wide text-slate-400 hover:text-slate-200"
-              >
-                ← Đổi lớp
-              </button>
-            )}
-          </div>
+          <h1 className="text-xl font-semibold text-white">Chọn chủ đề để luyện tập</h1>
 
           <div>
             <p className="mb-2 text-sm font-medium text-slate-300">Loại câu hỏi</p>
@@ -270,43 +224,52 @@ function PracticePageInner() {
             </div>
           </div>
 
-          {classDetailLoading ? (
-            <p className="text-sm text-slate-400">Đang tải chủ đề…</p>
+          {classes.length === 0 ? (
+            <p className="text-sm text-slate-300">
+              Bạn chưa tham gia lớp học nào — hãy hỏi giáo viên để lấy mã tham
+              gia, hoặc tìm bài luyện tập công khai ở{' '}
+              <a href="/quizzes" className="text-indigo-300 hover:text-indigo-200">
+                Ngân hàng câu hỏi
+              </a>
+              .
+            </p>
           ) : topics.length === 0 ? (
             <p className="text-sm text-slate-400">
-              Lớp này chưa có chủ đề nào khớp loại câu hỏi đã chọn.
+              Chưa có chủ đề nào khớp loại câu hỏi đã chọn.
             </p>
           ) : (
-            <div className="flex flex-wrap gap-2">
-              {topics.map((t) => (
-                <motion.button
-                  key={t}
-                  type="button"
-                  onClick={() => {
-                    playClick();
-                    setSelectedTopic(t);
-                  }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                  className={`rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors duration-200 ${
-                    t === selectedTopic
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
-                      : 'border border-white/15 bg-white/5 text-slate-300 hover:bg-white/10'
-                  }`}
-                >
-                  {t}
-                </motion.button>
-              ))}
+            <div>
+              <p className="mb-2 text-sm font-medium text-slate-300">
+                Chủ đề <span className="text-slate-500">(chọn một hoặc nhiều)</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {topics.map((t) => (
+                  <motion.button
+                    key={t}
+                    type="button"
+                    onClick={() => toggleTopic(t)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                    className={`rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors duration-200 ${
+                      selectedTopics.has(t)
+                        ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
+                        : 'border border-white/15 bg-white/5 text-slate-300 hover:bg-white/10'
+                    }`}
+                  >
+                    {t}
+                  </motion.button>
+                ))}
+              </div>
             </div>
           )}
-          <Button onClick={handleStart} disabled={!selectedTopic} className="w-full">
+          <Button onClick={handleStart} disabled={selectedTopics.size === 0} className="w-full">
             Bắt đầu
           </Button>
         </Card>
       ) : !current ? (
         <Card className="space-y-4">
-          <p className="text-slate-300">Chủ đề này chưa có bài tập nào.</p>
+          <p className="text-slate-300">Chưa có bài tập nào cho các chủ đề đã chọn.</p>
           <Button variant="secondary" onClick={changeTopic}>
             ← Chọn chủ đề khác
           </Button>
