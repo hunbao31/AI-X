@@ -367,9 +367,17 @@ export default function TeacherClassDetailPage() {
                             {topicExercises.map((ex) => (
                               <div
                                 key={ex.id}
-                                className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300"
+                                className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
                               >
-                                {ex.question}
+                                <span className="min-w-0 flex-1 truncate text-sm text-slate-300">
+                                  {ex.question}
+                                </span>
+                                <Link
+                                  href={`/teacher/exercises/${ex.id}/edit`}
+                                  className="shrink-0 text-xs font-medium text-indigo-300 hover:text-indigo-200"
+                                >
+                                  Chỉnh sửa
+                                </Link>
                               </div>
                             ))}
                           </div>
