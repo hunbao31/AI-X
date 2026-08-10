@@ -177,6 +177,15 @@ export interface GamificationSummary {
   badges?: Badge[];
 }
 
+export interface NotificationItem {
+  id: string;
+  type: string;
+  message: string;
+  link: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
 export interface QuizResult {
   attemptId: string | null;
   score: number;

@@ -18,6 +18,7 @@ import { MasteryStore } from '../mastery/mastery.store';
 import { RecommendationService } from '../recommendation/recommendation.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { GamificationService } from '../gamification/gamification.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ok, apiError } from '../common/api-envelope';
 
 interface AttemptInput {
@@ -44,6 +45,7 @@ export class AttemptsController {
     private readonly recommendationService: RecommendationService,
     private readonly analyticsService: AnalyticsService,
     private readonly gamificationService: GamificationService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   @Post()
@@ -189,6 +191,10 @@ export class AttemptsController {
     );
 
     const understandingLevel = body.correct ? 'HIGH' : 'LOW';
+    const verdictLabel = body.correct ? 'Đúng' : 'Sai';
+    const notifMessage = comment
+      ? `Câu tự luận "${group.exercise.question}" đã được chấm: ${verdictLabel}. Nhận xét: ${comment}`
+      : `Câu tự luận "${group.exercise.question}" đã được chấm: ${verdictLabel}.`;
     for (const attempt of group.attempts) {
       await this.masteryStore.recordAttempt(
         attempt.userId,
@@ -197,6 +203,7 @@ export class AttemptsController {
         group.exercise.topicId,
       );
       await this.gamificationService.recordAttempt(attempt.userId, body.correct);
+      await this.notificationsService.create(attempt.userId, 'essay_reviewed', notifMessage, '/practice');
     }
 
     return ok({ exerciseId: body.exerciseId, correct: body.correct, reviewedCount: group.attempts.length });

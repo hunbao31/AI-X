@@ -19,6 +19,7 @@ import { CurriculumModule } from './curriculum/curriculum.module';
 import { KnowledgeTracingModule } from './knowledge-tracing/knowledge-tracing.module';
 import { DiagnosticModule } from './diagnostic/diagnostic.module';
 import { AdminModule } from './admin/admin.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { AdminModule } from './admin/admin.module';
     KnowledgeTracingModule,
     DiagnosticModule,
     AdminModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

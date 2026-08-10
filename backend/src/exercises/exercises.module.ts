@@ -7,6 +7,7 @@ import { MasteryModule } from '../mastery/mastery.module';
 import { RecommendationModule } from '../recommendation/recommendation.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { GamificationModule } from '../gamification/gamification.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { GamificationModule } from '../gamification/gamification.module';
     RecommendationModule,
     AnalyticsModule,
     GamificationModule,
+    NotificationsModule,
   ],
   controllers: [ExercisesController, AttemptsController],
   providers: [ExercisesService],

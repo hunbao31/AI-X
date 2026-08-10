@@ -52,7 +52,7 @@ export interface PendingAttemptReviewGroup {
 }
 
 export interface GroupForReview {
-  exercise: { createdBy: string; topicId: string | null };
+  exercise: { createdBy: string; topicId: string | null; question: string };
   // Chi nhung attempt CON dang cho duyet tai thoi diem doc -- neu 1 hoc
   // sinh vua nop them cau tra loi khac giua luc giao vien dang xem trang,
   // dong moi do se KHONG bi cuon vao lan duyet nay (doc lai truoc khi ap
@@ -158,7 +158,7 @@ export class AnalyticsService {
   async getGroupForReview(exerciseId: string): Promise<GroupForReview | null> {
     const exercise = await this.prisma.exercise.findUnique({
       where: { id: exerciseId },
-      select: { createdBy: true, topicId: true },
+      select: { createdBy: true, topicId: true, question: true },
     });
     if (!exercise) return null;
 

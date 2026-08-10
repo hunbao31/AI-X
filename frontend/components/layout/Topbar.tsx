@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
+import { NotificationBell } from './NotificationBell';
 import { clearSession } from '@/lib/session';
 import { useUser } from '@/lib/user-context';
 
@@ -37,6 +38,7 @@ export function Topbar() {
             {ROLE_LABEL[user.role] ?? user.role}
           </Badge>
         )}
+        {user && <NotificationBell />}
         {/* User card: [avatar] username → profile */}
         <Link
           href={profileHref}
