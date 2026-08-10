@@ -11,19 +11,20 @@ interface Exercise {
 }
 
 interface AttemptResult {
-  correct: boolean;
-  understandingLevel: 'LOW' | 'MEDIUM' | 'HIGH';
-  explanation: string;
-  suggestion: string;
-  mastery: {
+  needsTeacherReview?: boolean;
+  correct?: boolean;
+  understandingLevel?: 'LOW' | 'MEDIUM' | 'HIGH';
+  explanation?: string;
+  suggestion?: string;
+  mastery?: {
     score: number;
     attempts: number;
   };
-  recommendation: {
+  recommendation?: {
     message: string;
     nextAction: string;
   };
-  gamification: {
+  gamification?: {
     xp: number;
     level: number;
     streak: number;
@@ -136,13 +137,21 @@ function ExercisePageInner() {
         </button>
       </form>
 
-      {result && (
+      {result && result.needsTeacherReview ? (
+        <div className="result-box">
+          <p className="result-status">Câu hỏi đang được chờ duyệt</p>
+          <p className="result-explanation">Giáo viên sẽ chấm câu tự luận này sau.</p>
+          <p className="dashboard-link">
+            <a href="/dashboard">Xem bảng điều khiển của tôi →</a>
+          </p>
+        </div>
+      ) : result ? (
         <div className={`result-box ${result.correct ? 'result-correct' : 'result-incorrect'}`}>
           <p className="result-status">{result.correct ? 'Đúng' : 'Sai'}</p>
           <p className="result-level">
             Mức độ hiểu bài:{' '}
-            <span className={`level-badge level-${result.understandingLevel.toLowerCase()}`}>
-              {UNDERSTANDING_LABEL[result.understandingLevel]}
+            <span className={`level-badge level-${result.understandingLevel!.toLowerCase()}`}>
+              {UNDERSTANDING_LABEL[result.understandingLevel!]}
             </span>
           </p>
           <p className="result-explanation">{result.explanation}</p>
@@ -151,37 +160,37 @@ function ExercisePageInner() {
           <div className="mastery-box">
             <div className="mastery-header">
               <span>Mức độ thành thạo {topic}</span>
-              <span>{result.mastery.score}/100</span>
+              <span>{result.mastery!.score}/100</span>
             </div>
             <div className="mastery-bar">
               <div
                 className="mastery-bar-fill"
-                style={{ width: `${result.mastery.score}%` }}
+                style={{ width: `${result.mastery!.score}%` }}
               />
             </div>
             <p className="mastery-attempts">
-              {result.mastery.attempts} lượt thử
+              {result.mastery!.attempts} lượt thử
             </p>
           </div>
 
           <div className="gamification-box">
             <span className="xp-gain">+{result.correct ? 10 : 3} XP</span>
             <div className="gamification-stats">
-              <span className="level-pill">Cấp độ {result.gamification.level}</span>
-              <span className="streak-pill">🔥 Chuỗi {result.gamification.streak} ngày</span>
+              <span className="level-pill">Cấp độ {result.gamification!.level}</span>
+              <span className="streak-pill">🔥 Chuỗi {result.gamification!.streak} ngày</span>
             </div>
           </div>
 
           <div className="recommendation-box">
-            <p className="recommendation-message">{result.recommendation.message}</p>
-            <p className="recommendation-action">Tiếp theo: {result.recommendation.nextAction}</p>
+            <p className="recommendation-message">{result.recommendation!.message}</p>
+            <p className="recommendation-action">Tiếp theo: {result.recommendation!.nextAction}</p>
           </div>
 
           <p className="dashboard-link">
             <a href="/dashboard">Xem bảng điều khiển của tôi →</a>
           </p>
         </div>
-      )}
+      ) : null}
     </main>
   );
 }

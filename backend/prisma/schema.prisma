@@ -24,6 +24,7 @@ model User {
   diagnosticExercises DiagnosticExercise[]
   diagnosticAttempts  DiagnosticAttempt[]
   reviewedDiagnosticAttempts DiagnosticAttempt[] @relation("DiagnosticAttemptReviewer")
+  reviewedAttempts Attempt[] @relation("AttemptReviewer")
   favoriteQuestions FavoriteQuestion[]
   forumAnswers      ForumAnswer[]
   forumUpvotes      ForumAnswerUpvote[]
@@ -260,15 +261,24 @@ model Notification {
 }
 
 model Attempt {
-  id                 String             @id @default(uuid())
+  id                 String              @id @default(uuid())
   userId             String
   exerciseId         String
   topic              String
   answer             String
-  correct            Boolean
-  understandingLevel UnderstandingLevel
-  createdAt          DateTime           @default(now())
-  user               User               @relation(fields: [userId], references: [id])
+  // null = cau tu luan (type=text) dang cho giao vien duyet -- xem
+  // AttemptsController.submit(). mcq luon co gia tri ngay (true/false),
+  // khong bao gio null. Cung pattern voi DiagnosticAttempt.correct.
+  correct            Boolean?
+  understandingLevel UnderstandingLevel?
+  needsTeacherReview Boolean             @default(false)
+  reviewedAt         DateTime?
+  reviewedBy         String?
+  createdAt          DateTime            @default(now())
+  user               User                @relation(fields: [userId], references: [id])
+  reviewer           User?               @relation("AttemptReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([needsTeacherReview])
 }
 
 model Mastery {

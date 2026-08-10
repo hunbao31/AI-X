@@ -1,20 +1,25 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpException,
   HttpStatus,
+  Param,
   Post,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard, AuthenticatedUser } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 import { ExercisesService } from './exercises.service';
 import { AiService } from '../ai/ai.service';
 import { MasteryStore } from '../mastery/mastery.store';
 import { RecommendationService } from '../recommendation/recommendation.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { GamificationService } from '../gamification/gamification.service';
+import { ok, apiError } from '../common/api-envelope';
 
 interface AttemptInput {
   exerciseId: string;
@@ -73,6 +78,19 @@ export class AttemptsController {
       );
     }
 
+    // Tu luan la do giao vien cham, khong phai AI -- ghi nhan cau tra loi
+    // roi dung lai, cho toi khi giao vien duyet (xem review() ben duoi).
+    // Khong tinh mastery/XP ngay vi chua biet dung/sai.
+    if (exercise.type === 'text') {
+      await this.analyticsService.recordPendingAttempt(
+        req.user.sub,
+        exercise.id,
+        body.topic,
+        body.answer,
+      );
+      return ok({ needsTeacherReview: true });
+    }
+
     const evaluation = await this.aiService.evaluateAnswer(
       exercise.question,
       body.answer,
@@ -114,5 +132,56 @@ export class AttemptsController {
       },
       meta: { timestamp: new Date().toISOString() },
     };
+  }
+
+  // Danh sach cau tu luan cua CHINH giao vien nay (Exercise.createdBy) dang
+  // cho duyet -- khong theo lop, vi cau hoi tao qua "Tao de" khong bat buoc
+  // gan lop.
+  @Get('pending-review')
+  @UseGuards(RolesGuard)
+  @Roles('teacher')
+  async pendingReview(@Req() req: { user: AuthenticatedUser }) {
+    return ok(await this.analyticsService.getPendingReviewForTeacher(req.user.sub));
+  }
+
+  // Giao vien duyet 1 cau tu luan -- ap dung dung/sai, roi moi tinh
+  // mastery + XP (bi hoan lai luc submit vi chua co ket qua).
+  @Post(':id/review')
+  @HttpCode(200)
+  @UseGuards(RolesGuard)
+  @Roles('teacher')
+  async review(
+    @Param('id') id: string,
+    @Body() body: { correct?: boolean },
+    @Req() req: { user: AuthenticatedUser },
+  ) {
+    if (typeof body?.correct !== 'boolean') {
+      throw apiError('VALIDATION_ERROR', 'correct là bắt buộc.', HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
+    const attempt = await this.analyticsService.getAttemptForReview(id);
+    if (!attempt) {
+      throw apiError('ATTEMPT_NOT_FOUND', 'Lượt làm bài không tồn tại hoặc đã được duyệt.', HttpStatus.NOT_FOUND);
+    }
+    if (req.user.role !== 'admin' && attempt.exercise.createdBy !== req.user.sub) {
+      throw apiError(
+        'FORBIDDEN',
+        'Bạn chỉ có thể duyệt câu hỏi do mình tạo.',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    await this.analyticsService.applyReview(id, body.correct, req.user.sub);
+
+    const understandingLevel = body.correct ? 'HIGH' : 'LOW';
+    await this.masteryStore.recordAttempt(
+      attempt.userId,
+      attempt.topic,
+      understandingLevel,
+      attempt.exercise.topicId,
+    );
+    await this.gamificationService.recordAttempt(attempt.userId, body.correct);
+
+    return ok({ id, correct: body.correct });
   }
 }

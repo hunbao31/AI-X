@@ -109,7 +109,10 @@ function PracticePageInner() {
         answer,
       });
       setResult(attemptResult);
-      if (attemptResult.correct) {
+      if (attemptResult.needsTeacherReview) {
+        // Tu luan -- dang cho giao vien duyet, khong co dung/sai de phan
+        // ung am thanh/mascot.
+      } else if (attemptResult.correct) {
         playCorrect();
         streakRef.current += 1;
         if (streakRef.current >= 3) {
@@ -272,16 +275,22 @@ function PracticePageInner() {
 
           {result && (
             <>
-              <FeedbackCard
-                correct={result.correct}
-                correctAnswer={current.answer}
-                understandingLevel={result.understandingLevel}
-                explanation={result.explanation}
-                suggestion={result.suggestion}
-                mastery={result.mastery}
-                gamification={result.gamification}
-                recommendation={result.recommendation}
-              />
+              {result.needsTeacherReview ? (
+                <p className="text-sm font-semibold text-indigo-300">
+                  Câu hỏi đang được chờ duyệt — giáo viên sẽ chấm câu tự luận này sau.
+                </p>
+              ) : (
+                <FeedbackCard
+                  correct={result.correct!}
+                  correctAnswer={current.answer}
+                  understandingLevel={result.understandingLevel!}
+                  explanation={result.explanation!}
+                  suggestion={result.suggestion!}
+                  mastery={result.mastery!}
+                  gamification={result.gamification!}
+                  recommendation={result.recommendation!}
+                />
+              )}
               <Button variant="secondary" onClick={goToNext}>
                 Câu hỏi tiếp theo →
               </Button>

@@ -24,6 +24,7 @@ export const TEACHER_NAV: NavItem[] = [
   { href: '/teacher/dashboard', label: 'Trang tổng quan', icon: '📈' },
   { href: '/teacher/classes', label: 'Lớp học', icon: '🏫' },
   { href: '/teacher/sets', label: 'Tạo đề', icon: '🎯' },
+  { href: '/teacher/review', label: 'Duyệt tự luận', icon: '✅' },
   { href: '/teacher/manage', label: 'Ngân hàng câu hỏi', icon: '🗂️' },
   { href: '/teacher/marketplace', label: 'Kho đề', icon: '🛒' },
   { href: '/teacher/forum', label: 'Diễn đàn', icon: '💬' },

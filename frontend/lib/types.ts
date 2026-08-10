@@ -290,13 +290,25 @@ export interface TopicRecommendation {
 }
 
 export interface AttemptResult {
-  correct: boolean;
-  understandingLevel: UnderstandingLevel;
-  explanation: string;
-  suggestion: string;
-  mastery: { score: number; attempts: number };
-  recommendation: { message: string; nextAction: string };
-  gamification: GamificationSummary;
+  // Tu luan (type='text') tra ve needsTeacherReview=true va khong co gi
+  // khac o duoi day -- dang cho giao vien duyet, khong phai AI cham.
+  needsTeacherReview?: boolean;
+  correct?: boolean;
+  understandingLevel?: UnderstandingLevel;
+  explanation?: string;
+  suggestion?: string;
+  mastery?: { score: number; attempts: number };
+  recommendation?: { message: string; nextAction: string };
+  gamification?: GamificationSummary;
+}
+
+export interface PendingAttemptReviewItem {
+  attemptId: string;
+  studentUsername: string;
+  question: string;
+  correctAnswer: string;
+  studentAnswer: string;
+  createdAt: string;
 }
 
 export interface UserProfile extends PublicUser {
