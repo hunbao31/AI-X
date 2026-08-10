@@ -8,8 +8,6 @@ import { MathText } from '@/components/ui/MathText';
 import { fadeSlideUp } from '@/lib/animations';
 import type { SetItem, Exercise, Difficulty } from '@/lib/types';
 
-const LETTERS = ['A', 'B', 'C', 'D'];
-
 interface QuestionEditorProps {
   item: SetItem;
   index: number;
@@ -176,39 +174,46 @@ export function QuestionEditor({
             type="text"
             value={textAnswer}
             onChange={(e) => setTextAnswer(e.target.value)}
+            required
             className="input-base"
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {options.map((opt, i) => (
-            <label
-              key={i}
-              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors duration-200 ${
-                correctIndex === i
-                  ? 'border-green-400/50 bg-green-500/10'
-                  : 'border-white/15 bg-white/5'
-              }`}
-            >
-              <input
-                type="radio"
-                name={`correct-${item.id}`}
-                checked={correctIndex === i}
-                onChange={() => setCorrectIndex(i)}
-                className="accent-green-500"
-              />
-              <span className="w-5 shrink-0 font-bold text-slate-400">{LETTERS[i]}</span>
-              <input
-                type="text"
-                value={opt}
-                onChange={(e) =>
-                  setOptions((prev) => prev.map((o, idx) => (idx === i ? e.target.value : o)))
-                }
-                placeholder={i < 2 ? `Đáp án ${LETTERS[i]} (bắt buộc)` : `Đáp án ${LETTERS[i]}`}
-                className="min-w-0 flex-1 bg-transparent text-white placeholder:text-slate-500 focus:outline-none"
-              />
-            </label>
-          ))}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-slate-300">
+            Các lựa chọn <span className="text-slate-500">(bấm ✓ để chọn đáp án đúng)</span>
+          </label>
+          {options.map((opt, i) => {
+            const isCorrect = correctIndex === i;
+            return (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={opt}
+                  onChange={(e) =>
+                    setOptions((prev) => prev.map((o, idx) => (idx === i ? e.target.value : o)))
+                  }
+                  placeholder={`Lựa chọn ${i + 1}`}
+                  className={`input-base flex-1 ${
+                    isCorrect ? 'border-green-500/60 bg-green-500/10 text-green-200' : ''
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setCorrectIndex(i)}
+                  disabled={!opt.trim()}
+                  title="Đánh dấu là đáp án đúng"
+                  className={`shrink-0 rounded-lg border px-3 py-2 text-sm font-medium transition-colors duration-150 ${
+                    isCorrect
+                      ? 'border-green-500/60 bg-green-500/20 text-green-300'
+                      : 'border-white/15 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white disabled:opacity-40'
+                  }`}
+                >
+                  ✓
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
 
