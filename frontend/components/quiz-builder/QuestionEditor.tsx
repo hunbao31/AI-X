@@ -39,6 +39,7 @@ export function QuestionEditor({
   onDragEnd,
 }: QuestionEditorProps) {
   const ex = item.exercise;
+  const isText = ex.type === 'text';
   const [question, setQuestion] = useState(ex.question);
   const [options, setOptions] = useState<string[]>(() => {
     const existing = ex.options ?? [];
@@ -48,42 +49,58 @@ export function QuestionEditor({
     const idx = (ex.options ?? []).indexOf(ex.answer);
     return idx >= 0 ? idx : 0;
   });
+  const [textAnswer, setTextAnswer] = useState(ex.answer);
   const [difficulty, setDifficulty] = useState<Difficulty>(ex.difficulty);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [justSaved, setJustSaved] = useState(false);
 
-  const dirty =
-    question !== ex.question ||
-    difficulty !== ex.difficulty ||
-    options.some((o, i) => o !== (ex.options?.[i] ?? '')) ||
-    options[correctIndex]?.trim() !== ex.answer;
+  const dirty = isText
+    ? question !== ex.question || difficulty !== ex.difficulty || textAnswer !== ex.answer
+    : question !== ex.question ||
+      difficulty !== ex.difficulty ||
+      options.some((o, i) => o !== (ex.options?.[i] ?? '')) ||
+      options[correctIndex]?.trim() !== ex.answer;
 
   async function handleSave() {
-    const trimmedOptions = options.map((o) => o.trim()).filter((o) => o !== '');
-    if (trimmedOptions.length < 2) {
-      setError('Cần ít nhất 2 đáp án.');
-      return;
-    }
-    const correctText = options[correctIndex]?.trim();
-    if (!correctText || !trimmedOptions.includes(correctText)) {
-      setError('Chọn một đáp án đúng trong số các đáp án đã nhập.');
-      return;
-    }
     if (!question.trim()) {
       setError('Cần nhập nội dung câu hỏi.');
       return;
     }
-    setSaving(true);
-    setError('');
-    try {
-      const updated = await apiPatch<Exercise>(`/api/v1/exercises/${ex.id}`, {
+    let payload: Record<string, unknown>;
+    if (isText) {
+      if (!textAnswer.trim()) {
+        setError('Cần nhập đáp án.');
+        return;
+      }
+      payload = {
+        question: question.trim(),
+        answer: textAnswer.trim(),
+        difficulty,
+      };
+    } else {
+      const trimmedOptions = options.map((o) => o.trim()).filter((o) => o !== '');
+      if (trimmedOptions.length < 2) {
+        setError('Cần ít nhất 2 đáp án.');
+        return;
+      }
+      const correctText = options[correctIndex]?.trim();
+      if (!correctText || !trimmedOptions.includes(correctText)) {
+        setError('Chọn một đáp án đúng trong số các đáp án đã nhập.');
+        return;
+      }
+      payload = {
         question: question.trim(),
         options: trimmedOptions,
         answer: correctText,
         difficulty,
-      });
+      };
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const updated = await apiPatch<Exercise>(`/api/v1/exercises/${ex.id}`, payload);
       onSaved(ex.id, updated);
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 1500);
@@ -152,36 +169,48 @@ export function QuestionEditor({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {options.map((opt, i) => (
-          <label
-            key={i}
-            className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors duration-200 ${
-              correctIndex === i
-                ? 'border-green-400/50 bg-green-500/10'
-                : 'border-white/15 bg-white/5'
-            }`}
-          >
-            <input
-              type="radio"
-              name={`correct-${item.id}`}
-              checked={correctIndex === i}
-              onChange={() => setCorrectIndex(i)}
-              className="accent-green-500"
-            />
-            <span className="w-5 shrink-0 font-bold text-slate-400">{LETTERS[i]}</span>
-            <input
-              type="text"
-              value={opt}
-              onChange={(e) =>
-                setOptions((prev) => prev.map((o, idx) => (idx === i ? e.target.value : o)))
-              }
-              placeholder={i < 2 ? `Đáp án ${LETTERS[i]} (bắt buộc)` : `Đáp án ${LETTERS[i]}`}
-              className="min-w-0 flex-1 bg-transparent text-white placeholder:text-slate-500 focus:outline-none"
-            />
-          </label>
-        ))}
-      </div>
+      {isText ? (
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-300">Đáp án</label>
+          <input
+            type="text"
+            value={textAnswer}
+            onChange={(e) => setTextAnswer(e.target.value)}
+            className="input-base"
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {options.map((opt, i) => (
+            <label
+              key={i}
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors duration-200 ${
+                correctIndex === i
+                  ? 'border-green-400/50 bg-green-500/10'
+                  : 'border-white/15 bg-white/5'
+              }`}
+            >
+              <input
+                type="radio"
+                name={`correct-${item.id}`}
+                checked={correctIndex === i}
+                onChange={() => setCorrectIndex(i)}
+                className="accent-green-500"
+              />
+              <span className="w-5 shrink-0 font-bold text-slate-400">{LETTERS[i]}</span>
+              <input
+                type="text"
+                value={opt}
+                onChange={(e) =>
+                  setOptions((prev) => prev.map((o, idx) => (idx === i ? e.target.value : o)))
+                }
+                placeholder={i < 2 ? `Đáp án ${LETTERS[i]} (bắt buộc)` : `Đáp án ${LETTERS[i]}`}
+                className="min-w-0 flex-1 bg-transparent text-white placeholder:text-slate-500 focus:outline-none"
+              />
+            </label>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <select
