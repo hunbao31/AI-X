@@ -58,7 +58,10 @@ export function NotificationBell() {
       apiPost(`/api/v1/notifications/${item.id}/read`, {}).catch(() => {});
     }
     setOpen(false);
-    if (item.link) router.push(item.link);
+    // Moi thong bao hien tai deu la ket qua cham tu luan -- luon dua ve
+    // Lich su lam bai (khong dung item.link, vi thong bao cu tao truoc day
+    // co the con luu link cu tro sai cho).
+    router.push('/history');
   }
 
   async function handleMarkAllRead() {
@@ -84,41 +87,50 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-[200] mt-2 w-80 rounded-2xl border border-white/20 bg-slate-950/60 p-2 shadow-2xl backdrop-blur-2xl">
-          <div className="flex items-center justify-between px-2 py-1.5">
-            <span className="text-sm font-semibold text-white">Thông báo</span>
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={handleMarkAllRead}
-                className="text-xs font-medium text-indigo-300 hover:text-indigo-200"
-              >
-                Đánh dấu đã đọc hết
-              </button>
-            )}
-          </div>
-          <div className="max-h-80 space-y-1 overflow-y-auto">
-            {items.length === 0 ? (
-              <p className="px-2 py-4 text-center text-sm text-slate-400">Chưa có thông báo nào.</p>
-            ) : (
-              items.map((item) => (
+        <>
+          {/* Phu mo ca trang phia sau -- giup panel noi bat, de nhin hon,
+              va bam vao dau cung duoc (them 1 cach dong ngoai vung ngoai
+              onOutsideClick da co). */}
+          <div
+            className="fixed inset-0 z-[190] bg-slate-950/60 backdrop-blur-[2px]"
+            onClick={() => setOpen(false)}
+          />
+          <div className="notif-panel-surface absolute right-0 z-[200] mt-2 w-80 rounded-2xl border border-white/20 p-2 shadow-2xl">
+            <div className="flex items-center justify-between px-2 py-1.5">
+              <span className="text-sm font-semibold text-white">Thông báo</span>
+              {unreadCount > 0 && (
                 <button
-                  key={item.id}
                   type="button"
-                  onClick={() => handleClickItem(item)}
-                  className={`block w-full rounded-xl px-3 py-2 text-left text-sm transition-colors duration-150 ${
-                    item.read
-                      ? 'text-slate-400 hover:bg-white/10'
-                      : 'border border-indigo-400/30 bg-indigo-500/15 text-white hover:bg-indigo-500/20'
-                  }`}
+                  onClick={handleMarkAllRead}
+                  className="text-xs font-medium text-indigo-300 hover:text-indigo-200"
                 >
-                  <p className="line-clamp-3">{item.message}</p>
-                  <p className="mt-1 text-xs text-slate-500">{timeAgo(item.createdAt)}</p>
+                  Đánh dấu đã đọc hết
                 </button>
-              ))
-            )}
+              )}
+            </div>
+            <div className="max-h-80 space-y-1 overflow-y-auto">
+              {items.length === 0 ? (
+                <p className="px-2 py-4 text-center text-sm text-slate-400">Chưa có thông báo nào.</p>
+              ) : (
+                items.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleClickItem(item)}
+                    className={`block w-full rounded-xl px-3 py-2 text-left text-sm transition-colors duration-150 ${
+                      item.read
+                        ? 'text-slate-400 hover:bg-white/10'
+                        : 'notif-item-unread border font-medium text-white'
+                    }`}
+                  >
+                    <p className="line-clamp-3">{item.message}</p>
+                    <p className="mt-1 text-xs text-slate-500">{timeAgo(item.createdAt)}</p>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

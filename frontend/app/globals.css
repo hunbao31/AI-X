@@ -135,6 +135,25 @@ html.light .border-white\/20 {
 html.light .bg-slate-950\/60 {
   background-color: rgba(255, 255, 255, 0.75);
 }
+
+/* Notification dropdown surface — deliberately more opaque than a Card
+ * (bg-white/10) since it floats over arbitrary page content, not just the
+ * gradient backdrop. Not a Tailwind utility, so it isn't covered by the
+ * html.light remaps above; themed directly here instead. */
+.notif-panel-surface {
+  background-color: rgba(2, 6, 23, 0.96);
+}
+html.light .notif-panel-surface {
+  background-color: rgba(255, 255, 255, 0.98);
+}
+.notif-item-unread {
+  background-color: rgba(99, 102, 241, 0.22);
+  border-color: rgba(129, 140, 248, 0.5);
+}
+html.light .notif-item-unread {
+  background-color: rgba(99, 102, 241, 0.12);
+  border-color: rgba(79, 70, 229, 0.35);
+}
 html.light .text-indigo-100 {
   color: #3730a3;
 }
