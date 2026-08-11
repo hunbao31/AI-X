@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, FormEvent, Suspense } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { apiGet, apiPost } from '@/lib/api';
 import { Card } from '@/components/ui/Card';
@@ -337,7 +338,12 @@ function PracticePageInner() {
             <>
               {result.needsTeacherReview ? (
                 <p className="text-sm font-semibold text-indigo-300">
-                  Câu hỏi đang được chờ duyệt — giáo viên sẽ chấm câu tự luận này sau.
+                  Câu hỏi đang được chờ duyệt — giáo viên sẽ chấm câu tự luận này sau, xem lại
+                  kết quả ở{' '}
+                  <Link href="/history" className="underline hover:text-indigo-200">
+                    Lịch sử
+                  </Link>
+                  .
                 </p>
               ) : (
                 <FeedbackCard

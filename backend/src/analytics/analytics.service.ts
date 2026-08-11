@@ -60,6 +60,22 @@ export interface GroupForReview {
   attempts: { id: string; userId: string; topic: string }[];
 }
 
+export interface ReviewedGroup {
+  exerciseId: string;
+  question: string;
+  correctAnswer: string;
+  correct: boolean;
+  comment: string | null;
+  reviewedAt: Date;
+  submissions: { attemptId: string; studentUsername: string; studentAnswer: string }[];
+}
+
+export interface AttemptForEdit {
+  id: string;
+  userId: string;
+  exercise: { createdBy: string; question: string };
+}
+
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
@@ -190,6 +206,154 @@ export class AnalyticsService {
         reviewedBy: reviewerId,
       },
     });
+  }
+
+  // Lich su da duyet -- gom theo (exerciseId, reviewedAt) vi mot lan bam
+  // Dung/Sai o applyGroupReview/editGroupReview ghi CUNG MOT gia tri
+  // reviewedAt cho ca nhom (mot Date() duoc tinh 1 lan roi dung cho ca
+  // updateMany), nen cap do nay chinh la ranh gioi tu nhien cua "1 lan
+  // duyet", ke ca khi cung 1 cau hoi duoc duyet nhieu dot khac nhau (hoc
+  // sinh nop lai sau) hoac duoc sua lai (xem editGroupReview).
+  async getReviewedGroupsForTeacher(teacherId: string): Promise<ReviewedGroup[]> {
+    const exercises = await this.prisma.exercise.findMany({
+      where: { createdBy: teacherId, type: 'text' },
+      select: { id: true, question: true, answer: true },
+    });
+    if (exercises.length === 0) return [];
+    const byId = new Map(exercises.map((e) => [e.id, e]));
+
+    const attempts = await this.prisma.attempt.findMany({
+      where: {
+        exerciseId: { in: exercises.map((e) => e.id) },
+        needsTeacherReview: false,
+        reviewedBy: { not: null },
+      },
+      orderBy: { reviewedAt: 'desc' },
+      select: {
+        id: true,
+        answer: true,
+        exerciseId: true,
+        correct: true,
+        teacherComment: true,
+        reviewedAt: true,
+        user: { select: { username: true } },
+      },
+    });
+
+    const groups = new Map<string, ReviewedGroup>();
+    for (const a of attempts) {
+      const key = `${a.exerciseId}::${a.reviewedAt!.getTime()}`;
+      let group = groups.get(key);
+      if (!group) {
+        group = {
+          exerciseId: a.exerciseId,
+          question: byId.get(a.exerciseId)?.question ?? '',
+          correctAnswer: byId.get(a.exerciseId)?.answer ?? '',
+          correct: a.correct ?? false,
+          comment: a.teacherComment,
+          reviewedAt: a.reviewedAt!,
+          submissions: [],
+        };
+        groups.set(key, group);
+      }
+      group.submissions.push({
+        attemptId: a.id,
+        studentUsername: a.user.username,
+        studentAnswer: a.answer,
+      });
+    }
+    return [...groups.values()].sort((x, y) => y.reviewedAt.getTime() - x.reviewedAt.getTime());
+  }
+
+  // Attempt + Exercise cho tung id duoc yeu cau sua -- controller dung de
+  // kiem tra quyen so huu (moi attemptId co the thuoc exercise khac nhau
+  // ve ly thuyet, nen kiem tra tung dong thay vi gia dinh dong nhat).
+  async getAttemptsForEdit(attemptIds: string[]): Promise<AttemptForEdit[]> {
+    const attempts = await this.prisma.attempt.findMany({
+      where: { id: { in: attemptIds }, needsTeacherReview: false },
+      select: { id: true, userId: true, exerciseId: true },
+    });
+    if (attempts.length === 0) return [];
+
+    const exerciseIds = [...new Set(attempts.map((a) => a.exerciseId))];
+    const exercises = await this.prisma.exercise.findMany({
+      where: { id: { in: exerciseIds } },
+      select: { id: true, createdBy: true, question: true },
+    });
+    const byId = new Map(exercises.map((e) => [e.id, e]));
+
+    return attempts
+      .filter((a) => byId.has(a.exerciseId))
+      .map((a) => ({ id: a.id, userId: a.userId, exercise: byId.get(a.exerciseId)! }));
+  }
+
+  // Sua lai 1 lan duyet da co -- CHI doi correct/teacherComment, KHONG dung
+  // lai vao mastery/gamification: diem/XP da cong luc duyet dau la mot bo
+  // dem cong don (Mastery.score, Gamification.xp), khong luu lai delta
+  // rieng cho tung attempt nen khong the "hoan tac" chinh xac de cong lai
+  // dung so. Coi day la sua BAN GHI danh gia, con diem so giu nguyen nhu
+  // luc duyet dau tien.
+  async editGroupReview(
+    attemptIds: string[],
+    correct: boolean,
+    comment: string | null,
+  ): Promise<void> {
+    await this.prisma.attempt.updateMany({
+      where: { id: { in: attemptIds } },
+      data: {
+        correct,
+        understandingLevel: correct ? 'HIGH' : 'LOW',
+        teacherComment: comment,
+        reviewedAt: new Date(),
+      },
+    });
+  }
+
+  // Lich su tu luan cua CHINH hoc sinh nay -- de biet cau nao dang cho, cau
+  // nao da duoc cham dung/sai va nhan xet cua giao vien (neu co), khong
+  // phan biet exercise cua giao vien nao (khac voi cac ham "for teacher"
+  // o tren, von gioi han theo exercise.createdBy).
+  async getMyTextAttempts(userId: string) {
+    const attempts = await this.prisma.attempt.findMany({
+      // Tu luan la nhung Attempt tung di qua recordPendingAttempt: hoac dang
+      // cho (needsTeacherReview=true) hoac da duoc duyet (reviewedBy khac
+      // null). Attempt cua MCQ khong bao gio khop 2 dieu kien nay.
+      where: { userId, OR: [{ needsTeacherReview: true }, { reviewedBy: { not: null } }] },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        exerciseId: true,
+        topic: true,
+        answer: true,
+        correct: true,
+        teacherComment: true,
+        needsTeacherReview: true,
+        createdAt: true,
+        reviewedAt: true,
+      },
+    });
+    if (attempts.length === 0) return [];
+
+    const exerciseIds = [...new Set(attempts.map((a) => a.exerciseId))];
+    const exercises = await this.prisma.exercise.findMany({
+      where: { id: { in: exerciseIds } },
+      select: { id: true, question: true, answer: true },
+    });
+    const byId = new Map(exercises.map((e) => [e.id, e]));
+
+    return attempts.map((a) => ({
+      attemptId: a.id,
+      question: byId.get(a.exerciseId)?.question ?? '',
+      correctAnswer: byId.get(a.exerciseId)?.answer ?? '',
+      topic: a.topic,
+      myAnswer: a.answer,
+      needsTeacherReview: a.needsTeacherReview,
+      correct: a.correct,
+      teacherComment: a.teacherComment,
+      createdAt: a.createdAt,
+      reviewedAt: a.reviewedAt,
+    }));
   }
 
   async getSummary(userId: string): Promise<AnalyticsSummary> {

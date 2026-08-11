@@ -203,9 +203,70 @@ export class AttemptsController {
         group.exercise.topicId,
       );
       await this.gamificationService.recordAttempt(attempt.userId, body.correct);
-      await this.notificationsService.create(attempt.userId, 'essay_reviewed', notifMessage, '/practice');
+      await this.notificationsService.create(attempt.userId, 'essay_reviewed', notifMessage, '/history');
     }
 
     return ok({ exerciseId: body.exerciseId, correct: body.correct, reviewedCount: group.attempts.length });
+  }
+
+  // Lich su cac lan da duyet, cua CHINH giao vien nay -- de xem lai va sua
+  // neu can (xem editReviewGroup ben duoi).
+  @Get('reviewed')
+  @UseGuards(RolesGuard)
+  @Roles('teacher')
+  async reviewed(@Req() req: { user: AuthenticatedUser }) {
+    return ok(await this.analyticsService.getReviewedGroupsForTeacher(req.user.sub));
+  }
+
+  // Sua lai mot lan duyet da co (doi dung/sai va/hoac nhan xet). Chi doi
+  // ban ghi danh gia -- mastery/XP da cong luc duyet dau GIU NGUYEN, xem
+  // ghi chu o AnalyticsService.editGroupReview vi sao khong hoan tac duoc
+  // chinh xac. Hoc sinh bi anh huong se nhan them 1 thong bao ve thay doi.
+  @Post('review-group/edit')
+  @HttpCode(200)
+  @UseGuards(RolesGuard)
+  @Roles('teacher')
+  async editReviewGroup(
+    @Body() body: { attemptIds?: string[]; correct?: boolean; comment?: string },
+    @Req() req: { user: AuthenticatedUser },
+  ) {
+    if (!Array.isArray(body?.attemptIds) || body.attemptIds.length === 0 || typeof body.correct !== 'boolean') {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'attemptIds và correct là bắt buộc.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const rows = await this.analyticsService.getAttemptsForEdit(body.attemptIds);
+    if (rows.length === 0) {
+      throw apiError('ATTEMPT_NOT_FOUND', 'Không tìm thấy lượt làm bài nào để sửa.', HttpStatus.NOT_FOUND);
+    }
+    for (const row of rows) {
+      if (req.user.role !== 'admin' && row.exercise.createdBy !== req.user.sub) {
+        throw apiError('FORBIDDEN', 'Bạn chỉ có thể sửa câu hỏi do mình tạo.', HttpStatus.FORBIDDEN);
+      }
+    }
+
+    const comment = body.comment?.trim() || null;
+    await this.analyticsService.editGroupReview(body.attemptIds, body.correct, comment);
+
+    const verdictLabel = body.correct ? 'Đúng' : 'Sai';
+    const question = rows[0].exercise.question;
+    const notifMessage = comment
+      ? `Câu tự luận "${question}" vừa được giáo viên sửa lại kết quả: ${verdictLabel}. Nhận xét: ${comment}`
+      : `Câu tự luận "${question}" vừa được giáo viên sửa lại kết quả: ${verdictLabel}.`;
+    for (const row of rows) {
+      await this.notificationsService.create(row.userId, 'essay_reviewed', notifMessage, '/history');
+    }
+
+    return ok({ updated: rows.length });
+  }
+
+  // Lich su tu luan cua CHINH hoc sinh dang dang nhap -- ca dang cho va da
+  // duyet, de biet minh dung/sai va doc nhan xet cua giao vien.
+  @Get('mine')
+  async mine(@Req() req: { user: AuthenticatedUser }) {
+    return ok(await this.analyticsService.getMyTextAttempts(req.user.sub));
   }
 }

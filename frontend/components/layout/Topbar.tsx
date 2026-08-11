@@ -30,7 +30,7 @@ export function Topbar() {
     user?.role === 'teacher' ? '/teacher/settings/profile' : '/settings/profile';
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-white/10 bg-white/5 px-4 backdrop-blur-xl sm:px-8">
+    <header className="relative z-[100] flex h-16 items-center justify-between border-b border-white/10 bg-white/5 px-4 backdrop-blur-xl sm:px-8">
       <div />
       <div className="flex items-center gap-3">
         {user && (

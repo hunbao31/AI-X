@@ -84,7 +84,7 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-80 rounded-2xl border border-white/15 bg-slate-900/95 p-2 shadow-xl backdrop-blur-xl">
+        <div className="absolute right-0 z-[200] mt-2 w-80 rounded-2xl border border-white/20 bg-slate-950/60 p-2 shadow-2xl backdrop-blur-2xl">
           <div className="flex items-center justify-between px-2 py-1.5">
             <span className="text-sm font-semibold text-white">Thông báo</span>
             {unreadCount > 0 && (
@@ -108,8 +108,8 @@ export function NotificationBell() {
                   onClick={() => handleClickItem(item)}
                   className={`block w-full rounded-xl px-3 py-2 text-left text-sm transition-colors duration-150 ${
                     item.read
-                      ? 'text-slate-400 hover:bg-white/5'
-                      : 'bg-indigo-500/10 text-slate-100 hover:bg-indigo-500/15'
+                      ? 'text-slate-400 hover:bg-white/10'
+                      : 'border border-indigo-400/30 bg-indigo-500/15 text-white hover:bg-indigo-500/20'
                   }`}
                 >
                   <p className="line-clamp-3">{item.message}</p>

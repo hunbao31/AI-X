@@ -325,6 +325,29 @@ export interface PendingAttemptReviewGroup {
   submissions: PendingReviewSubmission[];
 }
 
+export interface ReviewedGroup {
+  exerciseId: string;
+  question: string;
+  correctAnswer: string;
+  correct: boolean;
+  comment: string | null;
+  reviewedAt: string;
+  submissions: { attemptId: string; studentUsername: string; studentAnswer: string }[];
+}
+
+export interface MyTextAttempt {
+  attemptId: string;
+  question: string;
+  correctAnswer: string;
+  topic: string;
+  myAnswer: string;
+  needsTeacherReview: boolean;
+  correct: boolean | null;
+  teacherComment: string | null;
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
 export interface UserProfile extends PublicUser {
   createdAt: string;
 }
