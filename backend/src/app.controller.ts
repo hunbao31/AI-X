@@ -9,4 +9,13 @@ export class AppController {
   getHealth() {
     return this.appService.getHealth();
   }
+
+  // 👉 THÊM ĐOẠN NÀY
+  @Get('version')
+  getVersion() {
+    return {
+      version: '2099bd6',
+      time: new Date().toISOString(),
+    };
+  }
 }
