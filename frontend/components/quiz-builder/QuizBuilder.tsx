@@ -1,45 +1,45 @@
 'use client';
 
-import { useRef, useState, FormEvent } from 'react';
+import { useEffect, useRef, useState, FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiPost, apiPatch } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { MathText } from '@/components/ui/MathText';
 import { QuestionEditor } from './QuestionEditor';
 import { popIn } from '@/lib/animations';
-import type { SetItem, Exercise, Difficulty, ExerciseType } from '@/lib/types';
+import type { SetItem, Exercise, Difficulty, ExerciseType, ClassSummary } from '@/lib/types';
+import { apiGet } from '@/lib/api';
 
 const EMPTY_OPTIONS = ['', '', '', ''];
 
 interface QuizBuilderProps {
   setId: string;
+  setClassId: string | null;
   items: SetItem[];
   onItemsChange: (items: SetItem[]) => void;
 }
 
-// The primary way questions get into a set: authored right here, not
-// picked from a separate bank browse-and-attach flow. Field layout/labels
-// mirror ExerciseForm.tsx (teacher/create) 1:1 — same conceptual task, kept
-// visually consistent even though this posts to a different, atomic
-// "create + attach to set" endpoint rather than a standalone Exercise.
-// Reordering is native HTML5 drag-and-drop (no extra dependency) with an
-// optimistic local reorder that reverts if the server call fails.
-export function QuizBuilder({ setId, items, onItemsChange }: QuizBuilderProps) {
+export function QuizBuilder({ setId, setClassId, items, onItemsChange }: QuizBuilderProps) {
   const [showAddForm, setShowAddForm] = useState(items.length === 0);
   const [question, setQuestion] = useState('');
   const [type, setType] = useState<ExerciseType>('mcq');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [options, setOptions] = useState<string[]>(EMPTY_OPTIONS);
   const [answer, setAnswer] = useState('');
-  // Chi dung cho mcq -- xem ExerciseForm.tsx cho cung 1 pattern (bam chon
-  // truc tiep, to xanh, thay vi go tay "dap an dung").
   const [correctIndex, setCorrectIndex] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState('');
+  const [classes, setClasses] = useState<ClassSummary[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState('');
 
   const dragIndex = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [reordering, setReordering] = useState(false);
+
+  useEffect(() => {
+    if (setClassId) return;
+    apiGet<ClassSummary[]>('/api/v1/classes').then(setClasses).catch(() => setClasses([]));
+  }, [setClassId]);
 
   function resetForm() {
     setQuestion('');
@@ -59,6 +59,11 @@ export function QuizBuilder({ setId, items, onItemsChange }: QuizBuilderProps) {
     e.preventDefault();
     setAddError('');
 
+    if (!setClassId && !selectedClassId) {
+      setAddError('Cần chọn lớp để gắn câu hỏi này.');
+      return;
+    }
+
     let payload: Record<string, unknown>;
     if (type === 'mcq') {
       const trimmedOptions = options.map((o) => o.trim()).filter((o) => o !== '');
@@ -67,7 +72,7 @@ export function QuizBuilder({ setId, items, onItemsChange }: QuizBuilderProps) {
         return;
       }
       if (correctIndex === null) {
-        setAddError('Hãy bấm ✓ để chọn đáp án đúng.');
+        setAddError('Hãy chọn đáp án đúng.');
         return;
       }
       payload = {
@@ -79,6 +84,7 @@ export function QuizBuilder({ setId, items, onItemsChange }: QuizBuilderProps) {
         optionD: options[3] || undefined,
         correctAnswer: options[correctIndex].trim(),
         difficulty,
+        ...(!setClassId ? { classId: selectedClassId } : {}),
       };
     } else {
       if (!answer.trim()) {
@@ -90,6 +96,7 @@ export function QuizBuilder({ setId, items, onItemsChange }: QuizBuilderProps) {
         type: 'text',
         correctAnswer: answer.trim(),
         difficulty,
+        ...(!setClassId ? { classId: selectedClassId } : {}),
       };
     }
 
@@ -116,11 +123,13 @@ export function QuizBuilder({ setId, items, onItemsChange }: QuizBuilderProps) {
   function onDragStart(index: number) {
     dragIndex.current = index;
   }
+
   function onDragEnter(index: number) {
     if (dragIndex.current !== null && dragIndex.current !== index) {
       setDragOverIndex(index);
     }
   }
+
   async function onDragEnd() {
     const from = dragIndex.current;
     const to = dragOverIndex;
@@ -132,13 +141,14 @@ export function QuizBuilder({ setId, items, onItemsChange }: QuizBuilderProps) {
     const [moved] = reordered.splice(from, 1);
     reordered.splice(to, 0, moved);
     onItemsChange(reordered);
+
     setReordering(true);
     try {
       await apiPatch(`/api/v1/sets/${setId}/reorder`, {
         exerciseIds: reordered.map((i) => i.exerciseId),
       });
     } catch {
-      onItemsChange(items); // revert to the pre-drag order
+      onItemsChange(items);
     } finally {
       setReordering(false);
     }
@@ -164,7 +174,6 @@ export function QuizBuilder({ setId, items, onItemsChange }: QuizBuilderProps) {
               />
             ))}
           </AnimatePresence>
-          {reordering && <p className="text-xs text-slate-500">Đang lưu thứ tự…</p>}
         </div>
       )}
 
@@ -180,128 +189,92 @@ export function QuizBuilder({ setId, items, onItemsChange }: QuizBuilderProps) {
         >
           <h3 className="text-sm font-semibold text-white">Câu hỏi mới</h3>
 
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-300">
-              Câu hỏi{' '}
-              <span className="text-slate-500">
-                (hỗ trợ LaTeX: $x^2$ dạng dòng, $$\frac{'{a}{b}'}$$ dạng khối)
-              </span>
-            </label>
-            <textarea
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              required
-              rows={3}
-              className="input-base"
-            />
-            {question.includes('$') && (
-              <div className="mt-2 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">
-                <span className="mr-2 text-xs uppercase tracking-wide text-slate-500">
-                  Xem trước
-                </span>
-                <MathText text={question} />
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          {!setClassId && (
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-300">Loại</label>
+              <label className="mb-1.5 block text-sm text-slate-300">Lớp gắn câu hỏi</label>
               <select
-                value={type}
-                onChange={(e) => setType(e.target.value as ExerciseType)}
+                value={selectedClassId}
+                onChange={(e) => setSelectedClassId(e.target.value)}
                 className="input-base"
               >
-                <option value="mcq">Trắc nghiệm</option>
-                <option value="text">Tự luận</option>
+                <option value="">Chọn lớp…</option>
+                {classes.map((klass) => (
+                  <option key={klass.id} value={klass.id}>{klass.name}</option>
+                ))}
               </select>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-300">
-                Độ khó
-              </label>
-              <select
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value as Difficulty)}
-                className="input-base"
-              >
-                <option value="easy">Dễ</option>
-                <option value="medium">Trung bình</option>
-                <option value="hard">Khó</option>
-              </select>
-            </div>
-          </div>
-
-          {type === 'mcq' ? (
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-slate-300">
-                Các lựa chọn <span className="text-slate-500">(bấm ✓ để chọn đáp án đúng)</span>
-              </label>
-              {options.map((opt, i) => {
-                const isCorrect = correctIndex === i;
-                return (
-                  <div key={i} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={opt}
-                      onChange={(e) => updateOption(i, e.target.value)}
-                      placeholder={`Lựa chọn ${i + 1}`}
-                      className={`input-base flex-1 ${
-                        isCorrect ? 'border-green-500/60 bg-green-500/10 text-green-200' : ''
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setCorrectIndex(i)}
-                      disabled={!opt.trim()}
-                      title="Đánh dấu là đáp án đúng"
-                      className={`shrink-0 rounded-lg border px-3 py-2 text-sm font-medium transition-colors duration-150 ${
-                        isCorrect
-                          ? 'border-green-500/60 bg-green-500/20 text-green-300'
-                          : 'border-white/15 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white disabled:opacity-40'
-                      }`}
-                    >
-                      ✓
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-300">
-                Đáp án
-              </label>
-              <input
-                type="text"
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                required
-                className="input-base"
-              />
             </div>
           )}
 
-          {addError && <p className="text-sm text-red-400">{addError}</p>}
+          {/* QUESTION */}
+          <div>
+            <label className="mb-1.5 block text-sm text-slate-300">
+              Câu hỏi (LaTeX: $...$ hoặc $$...$$)
+            </label>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" disabled={adding}>
-              {adding ? 'Đang thêm…' : '+ Thêm câu hỏi'}
-            </Button>
-            {items.length > 0 && (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  setShowAddForm(false);
-                  resetForm();
-                  setAddError('');
-                }}
-              >
-                Xong
-              </Button>
-            )}
+            <textarea
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              className="input-base"
+              rows={3}
+            />
+
+            <div className="mt-2 text-sm text-slate-300">
+              <MathText text={question} />
+            </div>
           </div>
+
+          {/* TYPE + DIFFICULTY */}
+          <div className="grid grid-cols-2 gap-4">
+            <select value={type} onChange={(e) => setType(e.target.value as ExerciseType)} className="input-base">
+              <option value="mcq">Trắc nghiệm</option>
+              <option value="text">Tự luận</option>
+            </select>
+
+            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value as Difficulty)} className="input-base">
+              <option value="easy">Dễ</option>
+              <option value="medium">Trung bình</option>
+              <option value="hard">Khó</option>
+            </select>
+          </div>
+
+          {/* MCQ */}
+          {type === 'mcq' ? (
+            <div className="space-y-3">
+              {options.map((opt, i) => (
+                <div key={i}>
+                  <div className="flex gap-2">
+                    <input
+                      value={opt}
+                      onChange={(e) => updateOption(i, e.target.value)}
+                      className="input-base flex-1"
+                    />
+                    <button type="button" onClick={() => setCorrectIndex(i)}>✓</button>
+                  </div>
+
+                  <div className="text-sm text-slate-300 mt-1">
+                    <MathText text={opt} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div>
+              <input
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                className="input-base"
+              />
+              <div className="text-sm text-slate-300 mt-1">
+                <MathText text={answer} />
+              </div>
+            </div>
+          )}
+
+          {addError && <p className="text-red-400">{addError}</p>}
+
+          <Button type="submit">
+            {adding ? 'Đang thêm...' : 'Thêm câu hỏi'}
+          </Button>
         </motion.form>
       )}
     </div>

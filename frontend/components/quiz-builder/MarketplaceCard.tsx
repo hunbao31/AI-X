@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { apiGet, apiPost } from '@/lib/api';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import { fadeSlideUp } from '@/lib/animations';
-import type { MarketplaceSet, SetSummary, SetDetail } from '@/lib/types';
+import type { MarketplaceSet, SetSummary, SetDetail, ClassSummary } from '@/lib/types';
 
 interface MarketplaceCardProps {
   set: MarketplaceSet;
@@ -25,11 +25,18 @@ export function MarketplaceCard({ set }: MarketplaceCardProps) {
   const router = useRouter();
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState('');
+  const [classes, setClasses] = useState<ClassSummary[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState('');
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewQuestions, setPreviewQuestions] = useState<SetDetail['questions'] | null>(null);
   const [previewError, setPreviewError] = useState('');
+
+  useEffect(() => {
+    if (set.classId !== null) return;
+    apiGet<ClassSummary[]>('/api/v1/classes').then(setClasses).catch(() => setClasses([]));
+  }, [set.classId]);
 
   function togglePreview() {
     setPreviewOpen((prev) => !prev);
@@ -46,10 +53,17 @@ export function MarketplaceCard({ set }: MarketplaceCardProps) {
   }
 
   async function handleImport() {
+    if (set.classId === null && !selectedClassId) {
+      setError('Cần chọn lớp để gắn câu hỏi này.');
+      return;
+    }
     setImporting(true);
     setError('');
     try {
-      const copy = await apiPost<SetSummary>(`/api/v1/sets/${set.id}/import`, {});
+      const copy = await apiPost<SetSummary>(
+        `/api/v1/sets/${set.id}/import`,
+        set.classId === null ? { classId: selectedClassId } : {},
+      );
       // Straight into the builder for the new copy — importing is the start
       // of editing it, not the end of the interaction.
       router.push(`/teacher/sets/${copy.id}`);
@@ -107,6 +121,19 @@ export function MarketplaceCard({ set }: MarketplaceCardProps) {
       </div>
 
       {error && <p className="text-xs text-red-400">{error}</p>}
+
+      {set.classId === null && (
+        <select
+          value={selectedClassId}
+          onChange={(e) => setSelectedClassId(e.target.value)}
+          className="input-base text-sm"
+        >
+          <option value="">Chọn lớp để nhận câu hỏi…</option>
+          {classes.map((klass) => (
+            <option key={klass.id} value={klass.id}>{klass.name}</option>
+          ))}
+        </select>
+      )}
 
       <Button onClick={handleImport} disabled={importing} className="w-full">
         {importing ? 'Đang thêm…' : '⬇ Thêm vào kho đề của tôi'}

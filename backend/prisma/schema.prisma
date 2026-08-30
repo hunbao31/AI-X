@@ -8,44 +8,46 @@ datasource db {
 }
 
 model User {
-  id                String              @id @default(uuid())
-  email             String?             @unique
-  passwordHash      String
-  role              Role                @default(student)
-  createdAt         DateTime            @default(now())
-  username          String              @unique
-  theme             Theme               @default(dark)
-  avatar            String              @default("koaly_default")
-  attempts          Attempt[]
-  taughtClasses     Class[]             @relation("ClassTeacher")
-  classMemberships  ClassMember[]
-  createdExercises  Exercise[]
-  createdSets       ExerciseSet[]
-  diagnosticExercises DiagnosticExercise[]
-  diagnosticAttempts  DiagnosticAttempt[]
-  reviewedDiagnosticAttempts DiagnosticAttempt[] @relation("DiagnosticAttemptReviewer")
-  reviewedAttempts Attempt[] @relation("AttemptReviewer")
-  favoriteQuestions FavoriteQuestion[]
-  forumAnswers      ForumAnswer[]
-  forumUpvotes      ForumAnswerUpvote[]
-  forumPosts        ForumPost[]
-  gamification      Gamification?
-  masteries         Mastery[]
-  notifications     Notification[]
-  quizAttempts      QuizAttempt[]
+  id                         String               @id @default(uuid())
+  email                      String?              @unique
+  passwordHash               String
+  role                       Role                 @default(student)
+  createdAt                  DateTime             @default(now())
+  username                   String               @unique
+  theme                      Theme                @default(dark)
+  avatar                     String               @default("koaly_default")
+  attempts                   Attempt[]
+  taughtClasses              Class[]              @relation("ClassTeacher")
+  classMemberships           ClassMember[]
+  createdExercises           Exercise[]
+  createdSets                ExerciseSet[]
+  diagnosticExercises        DiagnosticExercise[]
+  diagnosticAttempts         DiagnosticAttempt[]
+  reviewedDiagnosticAttempts DiagnosticAttempt[]  @relation("DiagnosticAttemptReviewer")
+  reviewedAttempts           Attempt[]            @relation("AttemptReviewer")
+  favoriteQuestions          FavoriteQuestion[]
+  forumAnswers               ForumAnswer[]
+  forumUpvotes               ForumAnswerUpvote[]
+  forumPosts                 ForumPost[]
+  gamification               Gamification?
+  masteries                  Mastery[]
+  notifications              Notification[]
+  quizAttempts               QuizAttempt[]
 }
 
 model Class {
-  id         String        @id @default(uuid())
-  name       String
-  code       String        @unique
-  teacherId  String
-  createdAt  DateTime      @default(now())
-  teacher    User          @relation("ClassTeacher", fields: [teacherId], references: [id])
-  members    ClassMember[]
-  sets       ExerciseSet[]
-  forumPosts ForumPost[]
-  topics     Topic[]
+  id                  String               @id @default(uuid())
+  name                String
+  code                String               @unique
+  teacherId           String
+  createdAt           DateTime             @default(now())
+  teacher             User                 @relation("ClassTeacher", fields: [teacherId], references: [id])
+  members             ClassMember[]
+  exercises           Exercise[]
+  diagnosticExercises DiagnosticExercise[]
+  sets                ExerciseSet[]
+  forumPosts          ForumPost[]
+  topics              Topic[]
 }
 
 model ClassMember {
@@ -84,16 +86,18 @@ model Exercise {
   createdBy   String
   createdAt   DateTime           @default(now())
   topicId     String?
+  classId     String?
   tags        String[]           @default([])
-  // Chi ap dung khi topicId la null (cau hoi tu do, khong gan lop) -- cau
-  // hoi gan voi 1 topicId da rieng tu cho lop do roi (xem
-  // ExercisesService.isVisible), khong dung isPublic. Default true de giu
-  // nguyen hanh vi cua cac dong da co truoc migration nay.
-  isPublic    Boolean            @default(true)
+  isPublic    Boolean            @default(false)
+  visibility  String             @default("PRIVATE")
   creator     User               @relation(fields: [createdBy], references: [id])
   topicRef    Topic?             @relation(fields: [topicId], references: [id])
+  class       Class?             @relation(fields: [classId], references: [id], onDelete: SetNull)
   setItems    ExerciseSetItem[]
   favoritedBy FavoriteQuestion[]
+
+  @@index([visibility])
+  @@index([classId])
 }
 
 // Câu hỏi chẩn đoán gắn với 1 kỹ năng (skillCode) trong bảng SkillCatalog
@@ -118,10 +122,13 @@ model DiagnosticExercise {
   dapAnMau   String?
   createdBy  String
   createdAt  DateTime             @default(now())
+  classId    String?
   creator    User                 @relation(fields: [createdBy], references: [id])
+  class      Class?               @relation(fields: [classId], references: [id], onDelete: SetNull)
   attempts   DiagnosticAttempt[]
 
   @@index([skillCode])
+  @@index([classId])
 }
 
 enum DiagnosticAnswerType {
@@ -136,29 +143,35 @@ enum DiagnosticAnswerType {
 // LAY CAC DONG DA CO KET QUA CUOI CUNG (correct != null), xem
 // DiagnosticService.getMyReport/getClassReport/getClassStudentReports.
 model DiagnosticAttempt {
-  id                     String             @id @default(uuid())
-  userId                 String
-  diagnosticExerciseId   String
-  skillCode              String
-  answer                 String
+  id                       String              @id @default(uuid())
+  userId                   String
+  diagnosticExerciseId     String
+  classId                  String?
+  skillCode                String
+  answer                   String
   // null = tu_luan dang cho giao vien duyet (chua co ket qua cuoi cung).
   // mcq luon co gia tri ngay (true/false), khong bao gio null.
-  correct                Boolean?
+  correct                  Boolean?
   // Chi co khi answerType=tu_luan -- diem tuong dong PhoBERT, CHI de tham
   // khao cho giao vien, KHONG dung truc tiep de tinh diem_vung.
-  similarityScore        Float?
-  needsTeacherReview     Boolean            @default(false)
-  teacherReviewedCorrect Boolean?
-  reviewedAt             DateTime?
-  reviewedBy             String?
-  createdAt              DateTime           @default(now())
-  user                   User               @relation(fields: [userId], references: [id])
-  reviewer               User?              @relation("DiagnosticAttemptReviewer", fields: [reviewedBy], references: [id])
-  exercise               DiagnosticExercise @relation(fields: [diagnosticExerciseId], references: [id], onDelete: Cascade)
+  similarityScore          Float?
+  needsTeacherReview       Boolean             @default(false)
+  teacherReviewedCorrect   Boolean?
+  reviewedAt               DateTime?
+  reviewedBy               String?
+  autoMatchedFromAttemptId String?
+  createdAt                DateTime            @default(now())
+  user                     User                @relation(fields: [userId], references: [id])
+  reviewer                 User?               @relation("DiagnosticAttemptReviewer", fields: [reviewedBy], references: [id])
+  exercise                 DiagnosticExercise  @relation(fields: [diagnosticExerciseId], references: [id], onDelete: Cascade)
+  autoMatchedFromAttempt   DiagnosticAttempt?  @relation("AutoMatchSource", fields: [autoMatchedFromAttemptId], references: [id], onDelete: SetNull)
+  autoMatchedAttempts      DiagnosticAttempt[] @relation("AutoMatchSource")
 
   @@index([userId, createdAt])
   @@index([skillCode])
   @@index([needsTeacherReview])
+  @@index([autoMatchedFromAttemptId])
+  @@index([classId])
 }
 
 // Danh muc ky nang (bai tap) Toan lop 10 -- nguon du lieu DUY NHAT cho danh
@@ -198,6 +211,7 @@ model ExerciseSet {
   shuffleQuestions     Boolean           @default(false)
   shuffleAnswers       Boolean           @default(false)
   totalTimeLimit       Int?
+  visibility           String            @default("PRIVATE")
   class                Class?            @relation(fields: [classId], references: [id])
   creator              User              @relation(fields: [createdBy], references: [id])
   items                ExerciseSetItem[]
@@ -239,11 +253,13 @@ model FavoriteQuestion {
   id         String   @id @default(uuid())
   userId     String
   exerciseId String
+  classId    String?
   createdAt  DateTime @default(now())
   exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, exerciseId])
+  @@index([classId])
 }
 
 model Notification {
@@ -264,6 +280,7 @@ model Attempt {
   id                 String              @id @default(uuid())
   userId             String
   exerciseId         String
+  classId            String?
   topic              String
   answer             String
   // null = cau tu luan (type=text) dang cho giao vien duyet -- xem
@@ -283,6 +300,7 @@ model Attempt {
   reviewer           User?               @relation("AttemptReviewer", fields: [reviewedBy], references: [id])
 
   @@index([needsTeacherReview])
+  @@index([classId])
 }
 
 model Mastery {

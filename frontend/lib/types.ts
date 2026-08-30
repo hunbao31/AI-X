@@ -418,6 +418,7 @@ export interface MarketplaceSet {
   id: string;
   title: string;
   description: string | null;
+  classId: string | null;
   mode: QuizMode;
   createdAt: string;
   creator: ForumAuthor;
