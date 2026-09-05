@@ -14,6 +14,7 @@ import { parseQuestionRows, parseQuestionRowsFromCells, ParseResult } from './cs
 import { parseExcelToRows } from './excel-import';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { apiError } from '../common/api-envelope';
+import { SET_DEFAULT_TOPIC_NAME } from '../sets/sets.service';
 
 const MAX_TAGS = 10;
 const MAX_IMPORT_ROWS = 500;
@@ -127,10 +128,10 @@ export class ExercisesService {
   private async resolveTopicLink(
     topicId: string,
     user: AuthenticatedUser,
-  ): Promise<{ topicId: string; topicName: string }> {
+  ): Promise<{ topicId: string; topicName: string; classId?: string }> {
     const topic = await this.prisma.topic.findUnique({
       where: { id: topicId },
-      include: { class: { select: { teacherId: true } } },
+      include: { class: { select: { id: true, teacherId: true } } },
     });
     if (!topic) {
       throw apiError('TOPIC_NOT_FOUND', 'Chủ đề không tồn tại.', HttpStatus.NOT_FOUND);
@@ -142,18 +143,52 @@ export class ExercisesService {
         HttpStatus.FORBIDDEN,
       );
     }
-    return { topicId: topic.id, topicName: topic.name };
+    return { topicId: topic.id, topicName: topic.name, classId: topic.class.id };
+  }
+
+  private async resolveExerciseTopic(
+    dto: { topicId?: string | null; classId?: string | null; topic?: string },
+    user: AuthenticatedUser,
+  ): Promise<{ topicId: string; topicName: string; classId?: string }> {
+    if (dto?.topicId?.trim()) {
+      return this.resolveTopicLink(dto.topicId.trim(), user);
+    }
+
+    if (dto?.classId?.trim()) {
+      const classId = dto.classId.trim();
+      const klass = await this.prisma.class.findUnique({
+        where: { id: classId },
+        select: { id: true, teacherId: true },
+      });
+      if (!klass) {
+        throw apiError('CLASS_NOT_FOUND', 'Lớp học không tồn tại.', HttpStatus.NOT_FOUND);
+      }
+      if (user.role !== 'admin' && klass.teacherId !== user.sub) {
+        throw apiError(
+          'FORBIDDEN',
+          'Chỉ giáo viên của lớp học mới có thể thực hiện thao tác này.',
+          HttpStatus.FORBIDDEN,
+        );
+      }
+      const topicName = dto.topic?.trim() || SET_DEFAULT_TOPIC_NAME;
+      const topic = await this.prisma.topic.upsert({
+        where: { classId_name: { classId, name: topicName } },
+        create: { classId, name: topicName },
+        update: {},
+        select: { id: true, name: true },
+      });
+      return { topicId: topic.id, topicName: topic.name, classId };
+    }
+
+    throw apiError(
+      'TOPIC_REQUIRED',
+      'topicId là bắt buộc (hoặc cần cung cấp classId để gắn vào lớp).',
+      HttpStatus.BAD_REQUEST,
+    );
   }
 
   async create(dto: CreateExerciseDto, user: AuthenticatedUser) {
-    let topicLabel = dto?.topic ?? '';
-    let topicId: string | null = null;
-
-    if (dto?.topicId) {
-      const link = await this.resolveTopicLink(dto.topicId, user);
-      topicId = link.topicId;
-      topicLabel = link.topicName;
-    }
+    const { topicId, topicName, classId } = await this.resolveExerciseTopic(dto, user);
 
     const candidate: ExerciseCandidate = {
       question: dto?.question ?? '',
@@ -161,7 +196,7 @@ export class ExercisesService {
       options: dto?.type === 'mcq' ? (dto?.options ?? null) : null,
       answer: dto?.answer ?? '',
       difficulty: dto?.difficulty as Difficulty,
-      topic: topicLabel,
+      topic: topicName,
     };
     validateCandidate(candidate);
 
@@ -175,6 +210,7 @@ export class ExercisesService {
         tags: normalizeTags(dto?.tags),
         topic: candidate.topic,
         topicId,
+        classId: classId ?? undefined,
         // Meaningless once topicId is set (already private to that class),
         // but stored as given either way — simplest to reason about.
         isPublic: dto?.isPublic ?? false,
@@ -187,17 +223,15 @@ export class ExercisesService {
   // there; otherwise each row may carry its own topic column, with the
   // import-wide label as fallback.
   private async resolveImportTopic(
-    dto: { topic?: string; topicId?: string | null },
+    dto: { topic?: string; topicId?: string | null; classId?: string | null },
     user: AuthenticatedUser,
-  ): Promise<{ topicId: string | null; importTopicLabel: string }> {
-    let importTopicLabel = dto.topic?.trim() ?? '';
-    let topicId: string | null = null;
-    if (dto.topicId) {
-      const link = await this.resolveTopicLink(dto.topicId, user);
-      topicId = link.topicId;
-      importTopicLabel = link.topicName;
-    }
-    return { topicId, importTopicLabel };
+  ): Promise<{ topicId: string; importTopicLabel: string; classId?: string }> {
+    const res = await this.resolveExerciseTopic(dto, user);
+    return {
+      topicId: res.topicId,
+      importTopicLabel: res.topicName,
+      classId: res.classId,
+    };
   }
 
   // Shared tail of both import paths (CSV text and Excel) once each has
@@ -205,9 +239,10 @@ export class ExercisesService {
   // upstream (csv-import.ts), this only resolves per-row topic + inserts.
   private async finalizeImport(
     parsed: ParseResult,
-    topicId: string | null,
+    topicId: string,
     importTopicLabel: string,
     user: AuthenticatedUser,
+    classId?: string,
   ) {
     const { questions, errors } = parsed;
 
@@ -227,7 +262,8 @@ export class ExercisesService {
       difficulty: Difficulty;
       tags: string[];
       topic: string;
-      topicId: string | null;
+      topicId: string;
+      classId?: string;
       createdBy: string;
     }[] = [];
 
@@ -249,6 +285,7 @@ export class ExercisesService {
         tags: normalizeTags(q.tags),
         topic: label,
         topicId,
+        classId: classId ?? undefined,
         createdBy: user.sub,
       });
     });
@@ -282,11 +319,11 @@ export class ExercisesService {
       );
     }
 
-    const { topicId, importTopicLabel } = await this.resolveImportTopic(dto, user);
+    const { topicId, importTopicLabel, classId } = await this.resolveImportTopic(dto, user);
     const defaultDifficulty = this.resolveDefaultDifficulty(dto.difficulty);
     const parsed = parseQuestionRows(dto.csv, defaultDifficulty);
 
-    return this.finalizeImport(parsed, topicId, importTopicLabel, user);
+    return this.finalizeImport(parsed, topicId, importTopicLabel, user, classId);
   }
 
   // Bulk Excel (.xlsx) import — same column layout and downstream validation
@@ -302,11 +339,11 @@ export class ExercisesService {
       );
     }
 
-    const { topicId, importTopicLabel } = await this.resolveImportTopic(dto, user);
+    const { topicId, importTopicLabel, classId } = await this.resolveImportTopic(dto, user);
     const defaultDifficulty = this.resolveDefaultDifficulty(dto.difficulty);
     const parsed = parseQuestionRowsFromCells(cells, defaultDifficulty);
 
-    return this.finalizeImport(parsed, topicId, importTopicLabel, user);
+    return this.finalizeImport(parsed, topicId, importTopicLabel, user, classId);
   }
 
   // Random question picker for quick-start and auto-generated quizzes.
@@ -371,16 +408,22 @@ export class ExercisesService {
     }
 
     // Resolve the topic link first — it may drive the `topic` label.
-    let topicId: string | null = existing.topicId;
+    let topicId: string = existing.topicId;
     let topicLabel = dto.topic ?? existing.topic;
-    if (dto.topicId !== undefined) {
-      if (dto.topicId === null) {
-        topicId = null; // unlink, keep whatever label applies
-      } else {
-        const link = await this.resolveTopicLink(dto.topicId, user);
-        topicId = link.topicId;
-        topicLabel = link.topicName;
+    let updatedClassId: string | undefined = undefined;
+
+    if (dto.topicId !== undefined || dto.classId !== undefined) {
+      if (!dto.topicId?.trim() && !dto.classId?.trim()) {
+        throw apiError(
+          'VALIDATION_ERROR',
+          'topicId không thể để trống nếu không có classId.',
+          HttpStatus.BAD_REQUEST,
+        );
       }
+      const res = await this.resolveExerciseTopic(dto, user);
+      topicId = res.topicId;
+      topicLabel = res.topicName;
+      updatedClassId = res.classId;
     }
 
     const mergedType = dto.type ?? existing.type;
@@ -415,6 +458,7 @@ export class ExercisesService {
         tags: dto.tags !== undefined ? normalizeTags(dto.tags) : undefined,
         topic: candidate.topic,
         topicId,
+        classId: updatedClassId,
         isPublic: dto.isPublic ?? existing.isPublic,
       },
     });

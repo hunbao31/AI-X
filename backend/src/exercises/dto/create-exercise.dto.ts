@@ -12,6 +12,7 @@ export class CreateExerciseDto {
   topic?: string;
   // Optional link to a class Topic; when set, `topic` mirrors Topic.name.
   topicId?: string | null;
+  classId?: string | null;
   // Only meaningful when topicId is unset — a topic-linked question is
   // already private to that class regardless of this flag. Defaults to
   // false (private) for newly-created free-standing questions.
@@ -29,6 +30,7 @@ export class UpdateExerciseDto {
   tags?: string[];
   topic?: string;
   topicId?: string | null;
+  classId?: string | null;
   isPublic?: boolean;
 }
 
@@ -37,6 +39,7 @@ export class ImportExercisesDto {
   csv!: string;
   // Where the imported questions land: a class Topic link or a free label.
   topicId?: string | null;
+  classId?: string | null;
   topic?: string;
   // Default difficulty for rows that omit the optional column.
   difficulty?: Difficulty;
@@ -47,6 +50,7 @@ export class ImportExercisesDto {
 // accompanying form fields.
 export class ImportExcelDto {
   topicId?: string | null;
+  classId?: string | null;
   topic?: string;
   difficulty?: Difficulty;
 }

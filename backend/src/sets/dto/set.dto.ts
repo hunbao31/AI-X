@@ -77,6 +77,7 @@ export class CreateInlineQuestionDto {
   optionD?: string;
   correctAnswer!: string;
   difficulty?: 'easy' | 'medium' | 'hard';
+  classId?: string | null;
 }
 
 export class ReorderSetDto {

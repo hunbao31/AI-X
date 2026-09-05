@@ -32,6 +32,7 @@ const POINTS_PER_CORRECT = 100;
 const VALID_MODES: QuizMode[] = ['practice', 'exam'];
 const QUICK_QUIZ_SIZE = 5;
 const MAX_QUICK_ANSWERS = 20;
+export const SET_DEFAULT_TOPIC_NAME = 'Câu hỏi từ Bộ đề';
 
 // What a student is allowed to see about a question while playing — no
 // `answer` field; grading is server-side only.
@@ -146,6 +147,38 @@ export class SetsService {
       );
     }
     return code;
+  }
+
+  private async getDefaultSetTopicId(
+    tx: Prisma.TransactionClient,
+    classId: string,
+  ): Promise<string> {
+    const topic = await tx.topic.upsert({
+      where: { classId_name: { classId, name: SET_DEFAULT_TOPIC_NAME } },
+      create: { classId, name: SET_DEFAULT_TOPIC_NAME },
+      update: {},
+      select: { id: true },
+    });
+    return topic.id;
+  }
+
+  private async resolveQuestionClassId(
+    setClassId: string | null,
+    requestedClassId: string | null | undefined,
+    user: AuthenticatedUser,
+  ): Promise<string> {
+    if (setClassId) return setClassId;
+
+    const classId = requestedClassId?.trim();
+    if (!classId) {
+      throw apiError(
+        'CLASS_REQUIRED_FOR_QUESTION',
+        'Cần chọn lớp để gắn câu hỏi này.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.classesService.assertTeacherOf(classId, user);
+    return classId;
   }
 
   async createSet(user: AuthenticatedUser, dto: CreateSetDto) {
@@ -447,6 +480,7 @@ export class SetsService {
     dto: CreateInlineQuestionDto,
   ) {
     const set = await this.getOwnedSet(setId, user);
+    const classId = await this.resolveQuestionClassId(set.classId, dto?.classId, user);
 
     const question = dto?.question?.trim();
     if (!question) {
@@ -510,34 +544,36 @@ export class SetsService {
       options = mcqOptions;
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const exercise = await tx.exercise.create({
-        data: {
-          question,
-          type,
-          options,
-          answer,
-          difficulty,
-          // No natural "topic" in the fast-authoring flow — group by the set
-          // itself so the personal bank stays meaningfully organized.
-          topic: set.title,
-          createdBy: user.sub,
-          // Free-standing (no class topicId here) — defaults private, same
-          // as a question authored via "Tạo bài tập" (see ExercisesService.create).
-          isPublic: false,
-        },
-      });
+    return this.prisma.$transaction(
+      async (tx) => {
+        const topicId = await this.getDefaultSetTopicId(tx, classId);
+        const exercise = await tx.exercise.create({
+          data: {
+            question,
+            type,
+            options,
+            answer,
+            difficulty,
+            topic: SET_DEFAULT_TOPIC_NAME,
+            topicId,
+            classId,
+            createdBy: user.sub,
+            isPublic: false,
+          },
+        });
 
-      const last = await tx.exerciseSetItem.findFirst({
-        where: { setId },
-        orderBy: { order: 'desc' },
-        select: { order: true },
-      });
-      return tx.exerciseSetItem.create({
-        data: { setId, exerciseId: exercise.id, order: (last?.order ?? 0) + 1 },
-        include: { exercise: true },
-      });
-    });
+        const last = await tx.exerciseSetItem.findFirst({
+          where: { setId },
+          orderBy: { order: 'desc' },
+          select: { order: true },
+        });
+        return tx.exerciseSetItem.create({
+          data: { setId, exerciseId: exercise.id, order: (last?.order ?? 0) + 1 },
+          include: { exercise: true },
+        });
+      },
+      { maxWait: 10000, timeout: 20000 },
+    );
   }
 
   // Drag-and-drop reorder — exerciseIds must be exactly the set's current
@@ -639,50 +675,53 @@ export class SetsService {
         HttpStatus.FORBIDDEN,
       );
     }
-    if (dto?.classId) {
-      await this.classesService.assertTeacherOf(dto.classId, user);
-    }
+    const classId = await this.resolveQuestionClassId(set.classId, dto?.classId, user);
 
-    const newSetId = await this.prisma.$transaction(async (tx) => {
-      const newSet = await tx.exerciseSet.create({
-        data: {
-          title: `${set.title} (đã nhập)`,
-          description: set.description,
-          classId: dto?.classId ?? null,
-          // Imported copies always start private — importing never
-          // auto-republishes someone else's content under your name.
-          isPublic: false,
-          isPublished: true,
-          mode: set.mode,
-          shuffleQuestions: set.shuffleQuestions,
-          shuffleAnswers: set.shuffleAnswers,
-          timeLimitPerQuestion: set.timeLimitPerQuestion,
-          totalTimeLimit: set.totalTimeLimit,
-          createdBy: user.sub,
-        },
-      });
-
-      for (const item of set.items) {
-        const newExercise = await tx.exercise.create({
+    const newSetId = await this.prisma.$transaction(
+      async (tx) => {
+        const newSet = await tx.exerciseSet.create({
           data: {
-            question: item.exercise.question,
-            type: item.exercise.type,
-            options: item.exercise.options ?? undefined,
-            answer: item.exercise.answer,
-            difficulty: item.exercise.difficulty,
-            tags: item.exercise.tags,
-            topic: item.exercise.topic,
-            // No topicId: the importer doesn't own the original's class/topic.
+            title: `${set.title} (đã nhập)`,
+            description: set.description,
+            classId,
+            // Imported copies always start private — importing never
+            // auto-republishes someone else's content under your name.
+            isPublic: false,
+            isPublished: true,
+            mode: set.mode,
+            shuffleQuestions: set.shuffleQuestions,
+            shuffleAnswers: set.shuffleAnswers,
+            timeLimitPerQuestion: set.timeLimitPerQuestion,
+            totalTimeLimit: set.totalTimeLimit,
             createdBy: user.sub,
           },
         });
-        await tx.exerciseSetItem.create({
-          data: { setId: newSet.id, exerciseId: newExercise.id, order: item.order },
-        });
-      }
 
-      return newSet.id;
-    });
+        const topicId = await this.getDefaultSetTopicId(tx, classId);
+        for (const item of set.items) {
+          const newExercise = await tx.exercise.create({
+            data: {
+              question: item.exercise.question,
+              type: item.exercise.type,
+              options: item.exercise.options ?? undefined,
+              answer: item.exercise.answer,
+              difficulty: item.exercise.difficulty,
+              tags: item.exercise.tags,
+              topic: SET_DEFAULT_TOPIC_NAME,
+              topicId,
+              classId,
+              createdBy: user.sub,
+            },
+          });
+          await tx.exerciseSetItem.create({
+            data: { setId: newSet.id, exerciseId: newExercise.id, order: item.order },
+          });
+        }
+
+        return newSet.id;
+      },
+      { maxWait: 10000, timeout: 30000 },
+    );
 
     return this.prisma.exerciseSet.findUnique({
       where: { id: newSetId },
