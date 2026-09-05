@@ -366,12 +366,7 @@ export default function TeacherSetDetailPage() {
             {detail.questionCount} câu hỏi
           </span>
         </div>
-        <QuizBuilder
-          setId={setId}
-          setClassId={detail.classId}
-          items={detail.items ?? []}
-          onItemsChange={updateItems}
-        />
+        <QuizBuilder setId={setId} items={detail.items ?? []} onItemsChange={updateItems} />
       </Card>
 
       <Card className="space-y-3">

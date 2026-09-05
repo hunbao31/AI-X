@@ -77,8 +77,6 @@ export class CreateInlineQuestionDto {
   optionD?: string;
   correctAnswer!: string;
   difficulty?: 'easy' | 'medium' | 'hard';
-  // Required by the service only when the containing ExerciseSet has no class.
-  classId?: string | null;
 }
 
 export class ReorderSetDto {
@@ -87,7 +85,7 @@ export class ReorderSetDto {
 }
 
 export class ImportSetDto {
-  // Required by the service when the source ExerciseSet has no class.
+  // Optionally attach the imported copy to one of the importer's classes.
   classId?: string | null;
 }
 

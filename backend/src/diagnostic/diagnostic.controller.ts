@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Param,
   Post,
-  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -44,11 +43,7 @@ export class DiagnosticController {
   }
 
   @Get('bai/:baiSgk/questions')
-  async getBaiQuestions(
-    @Param('baiSgk') baiSgk: string,
-    @Query('classId') classId: string | undefined,
-    @Req() req: AuthenticatedRequest,
-  ) {
+  async getBaiQuestions(@Param('baiSgk') baiSgk: string) {
     const n = Number(baiSgk);
     if (!Number.isInteger(n) || n <= 0) {
       throw apiError(
@@ -57,7 +52,7 @@ export class DiagnosticController {
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
-    const questions = await this.diagnosticService.getBaiQuestions(n, classId, req.user);
+    const questions = await this.diagnosticService.getBaiQuestions(n);
     return ok(questions, { count: questions.length });
   }
 

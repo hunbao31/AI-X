@@ -1,17 +1,14 @@
-import { Body, Controller, HttpStatus, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { apiError, ok } from '../common/api-envelope';
 import { KnowledgeTracingService } from './knowledge-tracing.service';
 import { ClassStudentInput, InteractionTuple } from './knowledge-tracing.types';
-import { AuthenticatedRequest } from '../auth/auth.types';
-import { ClassesService } from '../classes/classes.service';
 
 interface PredictStudentDto {
   interactions?: InteractionTuple[];
 }
 
 interface PredictClassDto {
-  classId?: string;
   students?: ClassStudentInput[];
 }
 
@@ -50,7 +47,6 @@ function isValidStudents(value: unknown): value is ClassStudentInput[] {
 export class KnowledgeTracingController {
   constructor(
     private readonly knowledgeTracingService: KnowledgeTracingService,
-    private readonly classesService: ClassesService,
   ) {}
 
   // :id identifies which student the prediction belongs to (echoed back in
@@ -59,23 +55,13 @@ export class KnowledgeTracingController {
   // there's no established mapping yet from this app's Exercise rows to the
   // model's free-text "ten_bai_tap" identifiers.
   @Post('hoc-sinh/:id/du-doan')
-  async predictStudent(
-    @Param('id') id: string,
-    @Body() dto: PredictStudentDto,
-    @Req() req: AuthenticatedRequest,
-  ) {
+  async predictStudent(@Param('id') id: string, @Body() dto: PredictStudentDto) {
     if (!isValidInteractions(dto?.interactions)) {
       throw apiError(
         'VALIDATION_ERROR',
         'interactions là bắt buộc và phải là mảng các cặp [ten_bai_tap, 0|1].',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
-    }
-    if (req.user.sub !== id) {
-      if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-        throw apiError('FORBIDDEN', 'Bạn chỉ được xem dự đoán của chính mình.', HttpStatus.FORBIDDEN);
-      }
-      await this.classesService.assertTeacherOfStudent(id, req.user);
     }
 
     const steps = await this.knowledgeTracingService.predictStudent(
@@ -85,16 +71,14 @@ export class KnowledgeTracingController {
   }
 
   @Post('lop/bao-cao')
-  async predictClass(@Body() dto: PredictClassDto, @Req() req: AuthenticatedRequest) {
-    const classId = dto?.classId?.trim();
-    if (!classId || !isValidStudents(dto?.students)) {
+  async predictClass(@Body() dto: PredictClassDto) {
+    if (!isValidStudents(dto?.students)) {
       throw apiError(
         'VALIDATION_ERROR',
-        'classId và students là bắt buộc; mỗi học sinh cần id và interactions hợp lệ.',
+        'students là bắt buộc; mỗi học sinh cần id và interactions hợp lệ.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
-    await this.classesService.assertTeacherOf(classId, req.user);
 
     const topics = await this.knowledgeTracingService.predictClass(
       dto.students,

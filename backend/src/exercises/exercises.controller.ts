@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  GoneException,
   Body,
   Controller,
   Delete,
@@ -80,12 +79,20 @@ export class ExercisesController {
   // per caller (see ExercisesService.findAll) — topic-linked exercises
   // outside the caller's own classes are excluded, not just hidden in the UI.
   @Get()
-  findAll() {
-    throw new GoneException({
-      success: false,
-      error: { code: 'EXERCISES_ROUTE_RETIRED', message: 'Route này đã ngừng hoạt động. Hãy luyện tập qua Bộ đề (Sets).' },
-      meta: { timestamp: new Date().toISOString() },
-    });
+  async findAll(
+    @Req() req: AuthenticatedRequest,
+    @Query('topic') topic?: string,
+    @Query('topicId') topicId?: string,
+    @Query('difficulty') difficulty?: string,
+    @Query('type') type?: string,
+    @Query('tag') tag?: string,
+    @Query('search') search?: string,
+  ) {
+    const exercises = await this.exercisesService.findAll(
+      { topic, topicId, difficulty, type, tag, search },
+      req.user,
+    );
+    return ok(exercises, { count: exercises.length });
   }
 
   @Get('stats')
@@ -115,8 +122,6 @@ export class ExercisesController {
   }
 
   @Get(':id')
-  @UseGuards(RolesGuard)
-  @Roles('teacher')
   async findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     const exercise = await this.exercisesService.findOne(id, req.user);
     return ok(exercise);

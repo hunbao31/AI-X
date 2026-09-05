@@ -418,7 +418,6 @@ export interface MarketplaceSet {
   id: string;
   title: string;
   description: string | null;
-  classId: string | null;
   mode: QuizMode;
   createdAt: string;
   creator: ForumAuthor;
@@ -455,7 +454,6 @@ export type DiagnosticAnswerType = 'mcq' | 'tu_luan';
 
 export interface DiagnosticExercise {
   id: string;
-  classId: string | null;
   skillCode: string;
   difficulty: DiagnosticDifficulty;
   answerType: DiagnosticAnswerType;
@@ -468,7 +466,6 @@ export interface DiagnosticExercise {
 
 export interface PendingReviewItem {
   attemptId: string;
-  status: 'PENDING' | 'REVIEWED';
   studentUsername: string;
   question: string;
   dapAnMau: string;

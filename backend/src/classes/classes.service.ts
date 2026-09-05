@@ -177,24 +177,6 @@ export class ClassesService {
     }
   }
 
-  // Shared authorization for teacher views of an individual student's data.
-  // A teacher may proceed only when they own at least one class containing
-  // that student; administrators retain their existing global access.
-  async assertTeacherOfStudent(studentId: string, user: AuthenticatedUser): Promise<void> {
-    if (user.role === 'admin') return;
-    const membership = await this.prisma.classMember.findFirst({
-      where: { userId: studentId, class: { teacherId: user.sub } },
-      select: { id: true },
-    });
-    if (!membership) {
-      throw apiError(
-        'FORBIDDEN',
-        'Bạn không dạy học sinh này.',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-  }
-
   // Xoa han lop hoc. Cac bang tham chieu Class deu da co ON DELETE
   // CASCADE/SET NULL o muc DB (ClassMember/Topic cascade, ExerciseSet/
   // ForumPost chi go classId ve null, KHONG xoa du lieu cua giao vien) --
