@@ -48,10 +48,12 @@ export interface PlayableQuestion {
 
 export interface QuestionResult {
   exerciseId: string;
-  correct: boolean;
+  // null means a text answer is waiting for the existing teacher-review flow.
+  correct: boolean | null;
   yourAnswer: string;
-  // null in exam mode — the correct answer is never revealed.
-  correctAnswer: string | null;
+  // Deliberately omitted for text answers; null in exam mode for MCQ.
+  correctAnswer?: string | null;
+  needsTeacherReview?: boolean;
   // XP granted for this question (base × combo multiplier × speed bonus).
   xpEarned: number;
 }
@@ -544,34 +546,37 @@ export class SetsService {
       options = mcqOptions;
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const topicId = await this.getDefaultSetTopicId(tx, classId);
-      const exercise = await tx.exercise.create({
-        data: {
-          question,
-          type,
-          options,
-          answer,
-          difficulty,
-          topic: SET_DEFAULT_TOPIC_NAME,
-          topicId,
-          createdBy: user.sub,
-          // Free-standing (no class topicId here) — defaults private, same
-          // as a question authored via "Tạo bài tập" (see ExercisesService.create).
-          isPublic: false,
-        },
-      });
+    return this.prisma.$transaction(
+      async (tx) => {
+        const topicId = await this.getDefaultSetTopicId(tx, classId);
+        const exercise = await tx.exercise.create({
+          data: {
+            question,
+            type,
+            options,
+            answer,
+            difficulty,
+            topic: SET_DEFAULT_TOPIC_NAME,
+            topicId,
+            createdBy: user.sub,
+            // Free-standing (no class topicId here) — defaults private, same
+            // as a question authored via "Tạo bài tập" (see ExercisesService.create).
+            isPublic: false,
+          },
+        });
 
-      const last = await tx.exerciseSetItem.findFirst({
-        where: { setId },
-        orderBy: { order: 'desc' },
-        select: { order: true },
-      });
-      return tx.exerciseSetItem.create({
-        data: { setId, exerciseId: exercise.id, order: (last?.order ?? 0) + 1 },
-        include: { exercise: true },
-      });
-    });
+        const last = await tx.exerciseSetItem.findFirst({
+          where: { setId },
+          orderBy: { order: 'desc' },
+          select: { order: true },
+        });
+        return tx.exerciseSetItem.create({
+          data: { setId, exerciseId: exercise.id, order: (last?.order ?? 0) + 1 },
+          include: { exercise: true },
+        });
+      },
+      { maxWait: 10000, timeout: 20000 },
+    );
   }
 
   // Drag-and-drop reorder — exerciseIds must be exactly the set's current
@@ -675,47 +680,50 @@ export class SetsService {
     }
     const classId = await this.resolveQuestionClassId(set.classId, dto?.classId, user);
 
-    const newSetId = await this.prisma.$transaction(async (tx) => {
-      const newSet = await tx.exerciseSet.create({
-        data: {
-          title: `${set.title} (đã nhập)`,
-          description: set.description,
-          classId: dto?.classId ?? set.classId,
-          // Imported copies always start private — importing never
-          // auto-republishes someone else's content under your name.
-          isPublic: false,
-          isPublished: true,
-          mode: set.mode,
-          shuffleQuestions: set.shuffleQuestions,
-          shuffleAnswers: set.shuffleAnswers,
-          timeLimitPerQuestion: set.timeLimitPerQuestion,
-          totalTimeLimit: set.totalTimeLimit,
-          createdBy: user.sub,
-        },
-      });
-
-      for (const item of set.items) {
-        const topicId = await this.getDefaultSetTopicId(tx, classId);
-        const newExercise = await tx.exercise.create({
+    const newSetId = await this.prisma.$transaction(
+      async (tx) => {
+        const newSet = await tx.exerciseSet.create({
           data: {
-            question: item.exercise.question,
-            type: item.exercise.type,
-            options: item.exercise.options ?? undefined,
-            answer: item.exercise.answer,
-            difficulty: item.exercise.difficulty,
-            tags: item.exercise.tags,
-            topic: SET_DEFAULT_TOPIC_NAME,
-            topicId,
+            title: `${set.title} (đã nhập)`,
+            description: set.description,
+            classId: dto?.classId ?? set.classId,
+            // Imported copies always start private — importing never
+            // auto-republishes someone else's content under your name.
+            isPublic: false,
+            isPublished: true,
+            mode: set.mode,
+            shuffleQuestions: set.shuffleQuestions,
+            shuffleAnswers: set.shuffleAnswers,
+            timeLimitPerQuestion: set.timeLimitPerQuestion,
+            totalTimeLimit: set.totalTimeLimit,
             createdBy: user.sub,
           },
         });
-        await tx.exerciseSetItem.create({
-          data: { setId: newSet.id, exerciseId: newExercise.id, order: item.order },
-        });
-      }
 
-      return newSet.id;
-    });
+        const topicId = await this.getDefaultSetTopicId(tx, classId);
+        for (const item of set.items) {
+          const newExercise = await tx.exercise.create({
+            data: {
+              question: item.exercise.question,
+              type: item.exercise.type,
+              options: item.exercise.options ?? undefined,
+              answer: item.exercise.answer,
+              difficulty: item.exercise.difficulty,
+              tags: item.exercise.tags,
+              topic: SET_DEFAULT_TOPIC_NAME,
+              topicId,
+              createdBy: user.sub,
+            },
+          });
+          await tx.exerciseSetItem.create({
+            data: { setId: newSet.id, exerciseId: newExercise.id, order: item.order },
+          });
+        }
+
+        return newSet.id;
+      },
+      { maxWait: 10000, timeout: 30000 },
+    );
 
     return this.prisma.exerciseSet.findUnique({
       where: { id: newSetId },
@@ -778,6 +786,26 @@ export class SetsService {
     for (const item of set.items) {
       const entry = answerByExercise.get(item.exerciseId);
       const submitted = entry?.answer ?? '';
+      if (item.exercise.type === 'text') {
+        // Reuse the established Attempt/teacher-review flow used by the
+        // ordinary practice endpoint. A text answer never receives an
+        // automatic verdict, XP, mastery update, or answer disclosure.
+        combo = 0;
+        results.push({
+          exerciseId: item.exerciseId,
+          correct: null,
+          yourAnswer: submitted,
+          needsTeacherReview: true,
+          xpEarned: 0,
+        });
+        await this.analyticsService.recordPendingAttempt(
+          user.sub,
+          item.exerciseId,
+          item.exercise.topic,
+          submitted,
+        );
+        continue;
+      }
       const correct = submitted !== '' && answersMatch(submitted, item.exercise.answer);
       if (correct) {
         correctCount++;
@@ -1173,6 +1201,23 @@ export class SetsService {
       if (!exercise) continue;
 
       const submittedAnswer = typeof answer.answer === 'string' ? answer.answer : '';
+      if (exercise.type === 'text') {
+        combo = 0;
+        results.push({
+          exerciseId: exercise.id,
+          correct: null,
+          yourAnswer: submittedAnswer,
+          needsTeacherReview: true,
+          xpEarned: 0,
+        });
+        await this.analyticsService.recordPendingAttempt(
+          user.sub,
+          exercise.id,
+          exercise.topic,
+          submittedAnswer,
+        );
+        continue;
+      }
       const correct =
         submittedAnswer !== '' && answersMatch(submittedAnswer, exercise.answer);
       combo = correct ? combo + 1 : 0;

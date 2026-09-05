@@ -1,6 +1,7 @@
 export type DiagnosticDifficulty = 'de' | 'trung_binh' | 'kho';
 
 export class CreateDiagnosticExerciseDto {
+  classId!: string;
   skillCode!: string;
   difficulty!: DiagnosticDifficulty;
   question!: string;
@@ -9,6 +10,7 @@ export class CreateDiagnosticExerciseDto {
 }
 
 export class ImportDiagnosticExercisesDto {
+  classId!: string;
   skillCode!: string;
   // Raw CSV text (the frontend reads the uploaded file client-side).
   csv!: string;

@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { MathText } from '@/components/ui/MathText';
 import { useMascot } from '@/components/mascot/MascotProvider';
 import { useSounds } from '@/lib/sounds';
-import type { DiagnosticExercise, DiagnosticAttemptResult, DiagnosticDifficulty } from '@/lib/types';
+import type { ClassSummary, DiagnosticExercise, DiagnosticAttemptResult, DiagnosticDifficulty } from '@/lib/types';
 
 const DIFF_LABEL: Record<DiagnosticDifficulty, string> = {
   de: 'Dễ',
@@ -32,6 +32,9 @@ export default function PracticeSgkPage() {
 
   const [questions, setQuestions] = useState<DiagnosticExercise[] | null>(null);
   const [loadError, setLoadError] = useState('');
+  const [classes, setClasses] = useState<ClassSummary[]>([]);
+  const [classesLoading, setClassesLoading] = useState(true);
+  const [selectedClassId, setSelectedClassId] = useState('');
 
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState('');
@@ -40,12 +43,26 @@ export default function PracticeSgkPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    apiGet<DiagnosticExercise[]>(`/api/v1/diagnostic/bai/${encodeURIComponent(baiSgk)}/questions`)
+    apiGet<ClassSummary[]>('/api/v1/classes')
+      .then((items) => {
+        setClasses(items);
+        if (items.length === 1) setSelectedClassId(items[0].id);
+      })
+      .catch((err) => setLoadError(err instanceof Error ? err.message : 'Không thể tải lớp học.'))
+      .finally(() => setClassesLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedClassId) {
+      setQuestions(null);
+      return;
+    }
+    apiGet<DiagnosticExercise[]>(`/api/v1/diagnostic/bai/${encodeURIComponent(baiSgk)}/questions?classId=${encodeURIComponent(selectedClassId)}`)
       .then(setQuestions)
       .catch((err) =>
         setLoadError(err instanceof Error ? err.message : 'Không thể tải câu hỏi.'),
       );
-  }, [baiSgk]);
+  }, [baiSgk, selectedClassId]);
 
   useEffect(() => {
     mascot.setMood('thinking');
@@ -62,6 +79,7 @@ export default function PracticeSgkPage() {
     setSubmitError('');
     try {
       const evaluation = await apiPost<DiagnosticAttemptResult>('/api/v1/diagnostic/attempts', {
+        classId: selectedClassId,
         exerciseId: current.id,
         answer,
       });
@@ -104,6 +122,29 @@ export default function PracticeSgkPage() {
         <Card>
           <p className="text-red-400">{loadError}</p>
         </Card>
+      ) : classesLoading ? (
+        <p className="text-center text-slate-400">Đang tải lớp học…</p>
+      ) : !selectedClassId ? (
+        <Card className="space-y-4">
+          <h1 className="text-xl font-semibold text-white">Chọn lớp học</h1>
+          {classes.length === 0 ? (
+            <p className="text-slate-300">Bạn chưa tham gia lớp học nào.</p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {classes.map((klass) => (
+                <button
+                  key={klass.id}
+                  type="button"
+                  onClick={() => setSelectedClassId(klass.id)}
+                  className="rounded-xl border border-white/15 bg-white/5 p-4 text-left text-white hover:bg-white/10"
+                >
+                  <p className="font-medium">{klass.name}</p>
+                  <p className="mt-1 text-xs text-slate-400">Giáo viên: {klass.teacher.username}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </Card>
       ) : questions === null ? (
         <p className="text-center text-slate-400">Đang tải câu hỏi…</p>
       ) : questions.length === 0 ? (
@@ -126,7 +167,10 @@ export default function PracticeSgkPage() {
             <span className="text-xs font-medium uppercase tracking-wide text-slate-400">
               Bài {baiSgk} · Câu {index + 1}/{questions.length}
             </span>
-            <Badge tone={DIFF_TONE[current.difficulty]}>{DIFF_LABEL[current.difficulty]}</Badge>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setSelectedClassId('')} className="text-xs text-slate-400 hover:text-slate-200">Đổi lớp</button>
+              <Badge tone={DIFF_TONE[current.difficulty]}>{DIFF_LABEL[current.difficulty]}</Badge>
+            </div>
           </div>
 
           <motion.div

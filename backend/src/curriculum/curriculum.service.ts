@@ -8,8 +8,20 @@ import {
 
 @Injectable()
 export class CurriculumService {
-  getAllGrades(): CurriculumGrade[] {
-    return GRADES;
+  // Curriculum exercises contain correctAnswer for server-side/internal use.
+  // The browsing endpoint must never expose it to a learner.
+  getAllGrades(): Array<Omit<CurriculumGrade, 'topics'> & {
+    topics: Array<Omit<CurriculumTopic, 'exercises'> & {
+      exercises: Array<Pick<CurriculumExercise, 'id' | 'question'>>;
+    }>;
+  }> {
+    return GRADES.map((grade) => ({
+      ...grade,
+      topics: grade.topics.map((topic) => ({
+        ...topic,
+        exercises: topic.exercises.map(({ id, question }) => ({ id, question })),
+      })),
+    }));
   }
 
   findTopic(topicId: string): CurriculumTopic | undefined {

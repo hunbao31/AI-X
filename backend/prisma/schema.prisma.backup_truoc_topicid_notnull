@@ -85,13 +85,13 @@ model Exercise {
   topic       String
   createdBy   String
   createdAt   DateTime           @default(now())
-  topicId     String
+  topicId     String?
   classId     String?
   tags        String[]           @default([])
   isPublic    Boolean            @default(false)
   visibility  String             @default("PRIVATE")
   creator     User               @relation(fields: [createdBy], references: [id])
-  topicRef    Topic              @relation(fields: [topicId], references: [id])
+  topicRef    Topic?             @relation(fields: [topicId], references: [id])
   class       Class?             @relation(fields: [classId], references: [id], onDelete: SetNull)
   setItems    ExerciseSetItem[]
   favoritedBy FavoriteQuestion[]

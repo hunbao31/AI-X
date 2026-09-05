@@ -68,6 +68,7 @@ export interface StudentCatalogChuong {
 
 export interface PendingReviewItem {
   attemptId: string;
+  status: 'PENDING' | 'REVIEWED';
   studentUsername: string;
   question: string;
   dapAnMau: string;
@@ -190,7 +191,15 @@ export class DiagnosticService {
 
   // Tra ve tat ca cau hoi cua 1 bai SGK (gop tu moi skillCode thuoc bai do),
   // sap xep de -> trung_binh -> kho, on dinh theo thu tu tao trong tung muc.
-  async getBaiQuestions(baiSgk: number) {
+  async getBaiQuestions(baiSgk: number, classId: string | undefined, user: AuthenticatedUser) {
+    if (!classId?.trim()) {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'classId là bắt buộc để làm bài theo SGK.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+    await this.classesService.assertMember(classId, user);
     const skillRows = await this.prisma.skillCatalog.findMany({
       where: { baiSgk },
       select: { skillCode: true },
@@ -205,7 +214,7 @@ export class DiagnosticService {
     }
 
     const exercises = await this.prisma.diagnosticExercise.findMany({
-      where: { skillCode: { in: skillCodes } },
+      where: { skillCode: { in: skillCodes }, classId },
       orderBy: { createdAt: 'asc' },
     });
 
@@ -231,14 +240,16 @@ export class DiagnosticService {
   async submitAnswer(dto: SubmitDiagnosticAnswerDto, user: AuthenticatedUser) {
     const exerciseId = dto?.exerciseId?.trim();
     const answer = dto?.answer?.trim();
-    if (!exerciseId || !answer) {
+    const classId = dto?.classId?.trim();
+    if (!exerciseId || !answer || !classId) {
       throw apiError(
         'VALIDATION_ERROR',
-        'exerciseId và answer là bắt buộc.',
+        'classId, exerciseId và answer là bắt buộc.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
 
+    await this.classesService.assertMember(classId, user);
     const exercise = await this.prisma.diagnosticExercise.findUnique({
       where: { id: exerciseId },
     });
@@ -249,9 +260,16 @@ export class DiagnosticService {
         HttpStatus.NOT_FOUND,
       );
     }
+    if (exercise.classId !== classId) {
+      throw apiError(
+        'CLASS_EXERCISE_MISMATCH',
+        'Câu hỏi chẩn đoán không thuộc lớp học đã chọn.',
+        HttpStatus.FORBIDDEN,
+      );
+    }
 
     if (exercise.answerType === 'tu_luan') {
-      return this.submitTuLuanAnswer(exercise, answer, user);
+      return this.submitTuLuanAnswer(exercise, answer, classId, user);
     }
 
     if (exercise.answer == null) {
@@ -270,6 +288,7 @@ export class DiagnosticService {
       data: {
         userId: user.sub,
         diagnosticExerciseId: exercise.id,
+        classId,
         skillCode: exercise.skillCode,
         answer,
         correct,
@@ -290,6 +309,7 @@ export class DiagnosticService {
   private async submitTuLuanAnswer(
     exercise: { id: string; skillCode: string; dapAnMau: string | null },
     answer: string,
+    classId: string,
     user: AuthenticatedUser,
   ) {
     if (!exercise.dapAnMau) {
@@ -307,6 +327,7 @@ export class DiagnosticService {
       data: {
         userId: user.sub,
         diagnosticExerciseId: exercise.id,
+        classId,
         skillCode: exercise.skillCode,
         answer,
         correct: null,
@@ -424,6 +445,7 @@ export class DiagnosticService {
   }
 
   async createExercise(dto: CreateDiagnosticExerciseDto, user: AuthenticatedUser) {
+    const classId = dto?.classId?.trim();
     const skillCode = dto?.skillCode?.trim();
     const question = dto?.question?.trim();
     const answer = dto?.answer?.trim();
@@ -431,13 +453,14 @@ export class DiagnosticService {
       .map((o) => o?.trim())
       .filter((o): o is string => !!o);
 
-    if (!skillCode || !question || !answer) {
+    if (!classId || !skillCode || !question || !answer) {
       throw apiError(
         'VALIDATION_ERROR',
-        'Kỹ năng, câu hỏi và đáp án là bắt buộc.',
+        'Lớp, kỹ năng, câu hỏi và đáp án là bắt buộc.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
+    await this.classesService.assertTeacherOf(classId, user);
     if (!VALID_DIFFICULTIES.includes(dto?.difficulty)) {
       throw apiError(
         'VALIDATION_ERROR',
@@ -481,6 +504,7 @@ export class DiagnosticService {
     return this.prisma.diagnosticExercise.create({
       data: {
         skillCode,
+        classId,
         difficulty: dto.difficulty,
         question,
         options,
@@ -494,14 +518,16 @@ export class DiagnosticService {
   // giao vien luc keo ky nang vao UI truoc, khong doc tu CSV). Moi dong CSV
   // la 1 cau, dung parseDiagnosticQuestionRows (mirror exercises/csv-import.ts).
   async importExercises(dto: ImportDiagnosticExercisesDto, user: AuthenticatedUser) {
+    const classId = dto?.classId?.trim();
     const skillCode = dto?.skillCode?.trim();
-    if (!skillCode) {
+    if (!classId || !skillCode) {
       throw apiError(
         'VALIDATION_ERROR',
-        'skillCode là bắt buộc.',
+        'classId và skillCode là bắt buộc.',
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
+    await this.classesService.assertTeacherOf(classId, user);
     const skillExists = await this.prisma.skillCatalog.findUnique({
       where: { skillCode },
       select: { skillCode: true },
@@ -541,6 +567,7 @@ export class DiagnosticService {
       await this.prisma.diagnosticExercise.createMany({
         data: questions.map((q) => ({
           skillCode,
+          classId,
           difficulty: q.difficulty,
           question: q.question,
           options: q.options,
@@ -581,6 +608,7 @@ export class DiagnosticService {
       orderBy: { createdAt: 'asc' },
       select: {
         id: true,
+        needsTeacherReview: true,
         answer: true,
         similarityScore: true,
         createdAt: true,
@@ -591,6 +619,8 @@ export class DiagnosticService {
 
     return attempts.map((a) => ({
       attemptId: a.id,
+      // Chi la field response; khong luu DB va khong anh huong luong AI.
+      status: a.needsTeacherReview ? 'PENDING' : 'REVIEWED',
       studentUsername: a.user.username,
       question: a.exercise.question,
       dapAnMau: a.exercise.dapAnMau ?? '',

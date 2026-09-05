@@ -10,6 +10,7 @@ import type {
   SkillCatalogSkill,
   DiagnosticDifficulty,
   DiagnosticExercise,
+  ClassSummary,
 } from '@/lib/types';
 
 const TIER_TONE: Record<SkillCatalogSkill['priorityTier'], 'red' | 'yellow' | 'slate'> = {
@@ -116,6 +117,11 @@ export default function DiagnosticSkillCatalogPage() {
   const [catalog, setCatalog] = useState<SkillCatalogChuong[] | null>(null);
   const [loadError, setLoadError] = useState('');
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [selectedChuongSgk, setSelectedChuongSgk] = useState('');
+  const [selectedBaiSgk, setSelectedBaiSgk] = useState('');
+  const [selectedSkillCode, setSelectedSkillCode] = useState('');
+  const [classes, setClasses] = useState<ClassSummary[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState('');
 
   const draggedSkill = useRef<SkillCatalogSkill | null>(null);
   const [droppedSkill, setDroppedSkill] = useState<SkillCatalogSkill | null>(null);
@@ -131,6 +137,14 @@ export default function DiagnosticSkillCatalogPage() {
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState('');
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [question, setQuestion] = useState('');
+  const [options, setOptions] = useState(['', '', '', '']);
+  const [correctIndex, setCorrectIndex] = useState<number | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
+
+  const selectedChuong = catalog?.find((c) => c.chuongSgk === selectedChuongSgk);
+  const selectedBai = selectedChuong?.bais.find((b) => String(b.baiSgk) === selectedBaiSgk);
 
   async function loadCatalog() {
     setLoadError('');
@@ -144,6 +158,7 @@ export default function DiagnosticSkillCatalogPage() {
 
   useEffect(() => {
     loadCatalog();
+    apiGet<ClassSummary[]>('/api/v1/classes').then(setClasses).catch(() => setClasses([]));
   }, []);
 
   function toggleChuong(chuongSgk: string) {
@@ -180,11 +195,56 @@ export default function DiagnosticSkillCatalogPage() {
   function handleDrop() {
     setDragOverZone(false);
     if (!draggedSkill.current) return;
-    const skill = draggedSkill.current;
-    setDroppedSkill(skill);
-    resetImportForm();
-    loadExisting(skill.skillCode);
+    chooseSkill(draggedSkill.current);
     draggedSkill.current = null;
+  }
+
+  function chooseSkill(skill: SkillCatalogSkill) {
+    setDroppedSkill(skill);
+    setSelectedChuongSgk(skill.chuongSgk);
+    setSelectedBaiSgk(String(skill.baiSgk));
+    setSelectedSkillCode(skill.skillCode);
+    resetImportForm();
+    setCreateError('');
+    void loadExisting(skill.skillCode);
+  }
+
+  function updateOption(index: number, value: string) {
+    setOptions((previous) => previous.map((option, i) => (i === index ? value : option)));
+    if (correctIndex === index && !value.trim()) setCorrectIndex(null);
+  }
+
+  async function handleCreate() {
+    if (!droppedSkill || correctIndex === null) {
+      setCreateError('Hãy chọn kỹ năng và một đáp án đúng.');
+      return;
+    }
+    const cleanedOptions = options.map((option) => option.trim()).filter(Boolean);
+    const answer = options[correctIndex]?.trim();
+    if (!question.trim() || cleanedOptions.length < 2 || !answer) {
+      setCreateError('Câu hỏi, ít nhất hai lựa chọn và đáp án đúng là bắt buộc.');
+      return;
+    }
+    setCreating(true);
+    setCreateError('');
+    try {
+      await apiPost('/api/v1/diagnostic/exercises', {
+        classId: selectedClassId,
+        skillCode: droppedSkill.skillCode,
+        difficulty: defaultDifficulty,
+        question: question.trim(),
+        options: cleanedOptions,
+        answer,
+      });
+      setQuestion('');
+      setOptions(['', '', '', '']);
+      setCorrectIndex(null);
+      await loadExisting(droppedSkill.skillCode);
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : 'Không thể tạo câu hỏi.');
+    } finally {
+      setCreating(false);
+    }
   }
 
   function handleFile(file: File | undefined) {
@@ -210,6 +270,7 @@ export default function DiagnosticSkillCatalogPage() {
     setImporting(true);
     try {
       const imported = await apiPost<ImportResult>('/api/v1/diagnostic/exercises/import', {
+        classId: selectedClassId,
         skillCode: droppedSkill.skillCode,
         csv: csvText,
         difficulty: defaultDifficulty,
@@ -248,7 +309,7 @@ export default function DiagnosticSkillCatalogPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Ngân hàng câu hỏi chẩn đoán</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Kéo 1 ô kỹ năng từ danh mục bên trái vào khu vực bên phải, sau đó tải lên tệp
+          Chọn lớp, rồi kéo 1 ô kỹ năng từ danh mục bên trái vào khu vực bên phải, sau đó tải lên tệp
           CSV chứa các câu hỏi trắc nghiệm (4 lựa chọn) cho kỹ năng đó.
         </p>
       </div>
@@ -262,6 +323,71 @@ export default function DiagnosticSkillCatalogPage() {
             Danh mục kỹ năng {catalog ? `(${catalog.reduce((n, c) => n + c.bais.reduce((m, b) => m + b.skills.length, 0), 0)} bài)` : ''}
           </h2>
           {!catalog && !loadError && <p className="text-sm text-slate-400">Đang tải…</p>}
+          <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
+            <label className="block text-sm font-semibold text-white">Lớp học</label>
+            <select
+              value={selectedClassId}
+              onChange={(e) => setSelectedClassId(e.target.value)}
+              className="input-base"
+            >
+              <option value="">Chọn lớp đang soạn câu hỏi</option>
+              {classes.map((klass) => (
+                <option key={klass.id} value={klass.id}>{klass.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="text-sm font-semibold text-white">Chọn theo Chương/Bài SGK</p>
+            <select
+              value={selectedChuongSgk}
+              onChange={(e) => {
+                setSelectedChuongSgk(e.target.value);
+                setSelectedBaiSgk('');
+                setSelectedSkillCode('');
+              }}
+              className="input-base"
+            >
+              <option value="">Chọn Chương SGK</option>
+              {catalog?.map((chuong) => (
+                <option key={chuong.chuongSgk} value={chuong.chuongSgk}>
+                  {chuong.chuongSgk}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedBaiSgk}
+              disabled={!selectedChuong}
+              onChange={(e) => {
+                setSelectedBaiSgk(e.target.value);
+                setSelectedSkillCode('');
+              }}
+              className="input-base"
+            >
+              <option value="">Chọn Bài SGK</option>
+              {selectedChuong?.bais.map((bai) => (
+                <option key={bai.baiSgk} value={bai.baiSgk}>
+                  Bài {bai.baiSgk}{bai.tenBai ? ` — ${bai.tenBai}` : ''}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedSkillCode}
+              disabled={!selectedBai}
+              onChange={(e) => {
+                const skill = selectedBai?.skills.find((item) => item.skillCode === e.target.value);
+                if (skill) chooseSkill(skill);
+                else setSelectedSkillCode('');
+              }}
+              className="input-base"
+            >
+              <option value="">Chọn kỹ năng</option>
+              {selectedBai?.skills.map((skill) => (
+                <option key={skill.skillCode} value={skill.skillCode}>
+                  {skill.vnName}
+                </option>
+              ))}
+            </select>
+          </div>
           {catalog?.map((chuong) => {
             const isCollapsed = collapsed.has(chuong.chuongSgk);
             const total = chuong.bais.reduce((n, b) => n + b.skills.length, 0);
@@ -345,6 +471,38 @@ export default function DiagnosticSkillCatalogPage() {
               </div>
 
               <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                <p className="text-sm font-semibold text-white">Soạn câu hỏi trực tiếp</p>
+                <textarea
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  rows={3}
+                  placeholder="Nhập câu hỏi"
+                  className="input-base"
+                />
+                {options.map((option, index) => (
+                  <label key={index} className="flex items-center gap-2 text-sm text-slate-300">
+                    <input
+                      type="radio"
+                      name="correct-option"
+                      checked={correctIndex === index}
+                      onChange={() => setCorrectIndex(index)}
+                      disabled={!option.trim()}
+                    />
+                    <input
+                      value={option}
+                      onChange={(e) => updateOption(index, e.target.value)}
+                      placeholder={`Lựa chọn ${index + 1}`}
+                      className="input-base flex-1"
+                    />
+                  </label>
+                ))}
+                {createError && <p className="text-sm text-red-400">{createError}</p>}
+                <Button onClick={handleCreate} disabled={creating || !selectedClassId}>
+                  {creating ? 'Đang lưu…' : 'Lưu câu hỏi'}
+                </Button>
+              </div>
+
+              <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-3">
                 <p className="text-sm font-semibold text-white">Nhập câu hỏi từ CSV</p>
 
                 <div>
@@ -402,7 +560,7 @@ export default function DiagnosticSkillCatalogPage() {
                   </div>
                 )}
 
-                <Button onClick={handleImport} disabled={importing}>
+                <Button onClick={handleImport} disabled={importing || !selectedClassId}>
                   {importing ? 'Đang nhập…' : 'Nhập câu hỏi'}
                 </Button>
               </div>

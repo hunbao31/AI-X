@@ -147,13 +147,16 @@ export class ExercisesService {
 
   async create(dto: CreateExerciseDto, user: AuthenticatedUser) {
     let topicLabel = dto?.topic ?? '';
-    let topicId: string | null = null;
-
-    if (dto?.topicId) {
-      const link = await this.resolveTopicLink(dto.topicId, user);
-      topicId = link.topicId;
-      topicLabel = link.topicName;
+    if (!dto?.topicId?.trim()) {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'topicId là bắt buộc.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
     }
+    const link = await this.resolveTopicLink(dto.topicId, user);
+    const topicId: string = link.topicId;
+    topicLabel = link.topicName;
 
     const candidate: ExerciseCandidate = {
       question: dto?.question ?? '',
@@ -189,15 +192,17 @@ export class ExercisesService {
   private async resolveImportTopic(
     dto: { topic?: string; topicId?: string | null },
     user: AuthenticatedUser,
-  ): Promise<{ topicId: string | null; importTopicLabel: string }> {
+  ): Promise<{ topicId: string; importTopicLabel: string }> {
     let importTopicLabel = dto.topic?.trim() ?? '';
-    let topicId: string | null = null;
-    if (dto.topicId) {
-      const link = await this.resolveTopicLink(dto.topicId, user);
-      topicId = link.topicId;
-      importTopicLabel = link.topicName;
+    if (!dto?.topicId?.trim()) {
+      throw apiError(
+        'VALIDATION_ERROR',
+        'topicId là bắt buộc khi nhập danh sách câu hỏi.',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
     }
-    return { topicId, importTopicLabel };
+    const link = await this.resolveTopicLink(dto.topicId, user);
+    return { topicId: link.topicId, importTopicLabel: link.topicName };
   }
 
   // Shared tail of both import paths (CSV text and Excel) once each has
@@ -205,7 +210,7 @@ export class ExercisesService {
   // upstream (csv-import.ts), this only resolves per-row topic + inserts.
   private async finalizeImport(
     parsed: ParseResult,
-    topicId: string | null,
+    topicId: string,
     importTopicLabel: string,
     user: AuthenticatedUser,
   ) {
@@ -227,7 +232,7 @@ export class ExercisesService {
       difficulty: Difficulty;
       tags: string[];
       topic: string;
-      topicId: string | null;
+      topicId: string;
       createdBy: string;
     }[] = [];
 
@@ -371,16 +376,19 @@ export class ExercisesService {
     }
 
     // Resolve the topic link first — it may drive the `topic` label.
-    let topicId: string | null = existing.topicId;
+    let topicId: string = existing.topicId;
     let topicLabel = dto.topic ?? existing.topic;
     if (dto.topicId !== undefined) {
-      if (dto.topicId === null) {
-        topicId = null; // unlink, keep whatever label applies
-      } else {
-        const link = await this.resolveTopicLink(dto.topicId, user);
-        topicId = link.topicId;
-        topicLabel = link.topicName;
+      if (!dto.topicId?.trim()) {
+        throw apiError(
+          'VALIDATION_ERROR',
+          'topicId không thể để trống.',
+          HttpStatus.UNPROCESSABLE_ENTITY,
+        );
       }
+      const link = await this.resolveTopicLink(dto.topicId, user);
+      topicId = link.topicId;
+      topicLabel = link.topicName;
     }
 
     const mergedType = dto.type ?? existing.type;

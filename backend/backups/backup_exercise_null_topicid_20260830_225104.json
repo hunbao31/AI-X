@@ -1,0 +1,1722 @@
+[
+  {
+    "id": "be7e54e5-8f1a-463d-a08b-5b4e630c52a6",
+    "question": "Cho các phát biểu sau: “17 là số nguyên tố”. “Tam giác vuông có một đường trung tuyến bằng nửa cạnh huyền”. “Các em hãy cố gắng học tập thật tốt nhé!” “Mọi hình chữ nhật đều nội tiếp được đường tròn”. Hỏi có bao nhiêu phát biểu là một mệnh đề?",
+    "type": "mcq",
+    "options": [
+      "4",
+      "3",
+      "2",
+      "1"
+    ],
+    "answer": "3",
+    "difficulty": "easy",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "12d69774-40de-4a6e-b7e7-1bd2dcf9f63d",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 1,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "72d8a32b-39a3-4003-8267-68bf57fc81e8",
+    "question": "Mệnh đề phủ định của mệnh đề “2018 là số tự nhiên chẵn” là",
+    "type": "mcq",
+    "options": [
+      "2018 là số chẵn.",
+      "2018 là số nguyên tố.",
+      "2018 không là số tự nhiên chẵn.",
+      "2018 là số chính phương."
+    ],
+    "answer": "2018 không là số tự nhiên chẵn.",
+    "difficulty": "easy",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "34506b99-0484-445d-bdc4-ea8faed2a692",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 2,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "af4585f0-4619-4035-bf88-33ecdbca2314",
+    "question": "Tập hợp nào sau đây có đúng một tập hợp con?",
+    "type": "mcq",
+    "options": [
+      "∅.",
+      "{1}.",
+      "{∅}.",
+      "{1; ∅}."
+    ],
+    "answer": "∅.",
+    "difficulty": "medium",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "218c6d9a-fad3-45c3-98e4-ad7ecb481ee5",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 3,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "a6e4feba-b395-4237-897b-2ffc013baaac",
+    "question": "Trong các câu sau, câu nào là mệnh đề?",
+    "type": "mcq",
+    "options": [
+      "15 là số nguyên tố.",
+      "a + b = c.",
+      "x² + x = 0.",
+      "2n + 1 chia hết cho 3."
+    ],
+    "answer": "15 là số nguyên tố.",
+    "difficulty": "easy",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "b2bfcef8-b9dc-4887-bc6b-80cd8daea2d6",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 4,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "40d3a39d-5be0-43ad-87ea-73c969902f1f",
+    "question": "Cho tập hợp A = {x² + 1 | x ∈ N*; x² ≤ 5}. Phần tử của tập A là:",
+    "type": "mcq",
+    "options": [
+      "A = {1; 2; 3; 4}.",
+      "A = {2; 5}.",
+      "A = {0; 2; 5}.",
+      "A = {0; 1; 2; 3; 4; 5}."
+    ],
+    "answer": "A = {2; 5}.",
+    "difficulty": "medium",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "f180b6f8-3003-4901-9a5e-979d0a036d3c",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 5,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "8138feb2-a0b9-4856-bd80-a15a9a80ec88",
+    "question": "Trong các mệnh đề sau, mệnh đề nào có mệnh đề đảo đúng?",
+    "type": "mcq",
+    "options": [
+      "\"Nếu a > b thì a² > b².\"",
+      "\"Nếu tích của hai số nguyên a và b là một số lẻ thì a, b là các số lẻ.\"",
+      "\"Nếu một tứ giác là hình thoi thì có hai đường chéo vuông góc với nhau.\"",
+      "\"Nếu một số nguyên chia hết cho 6 thì nó chia hết cho 3.\""
+    ],
+    "answer": "\"Nếu tích của hai số nguyên a và b là một số lẻ thì a, b là các số lẻ.\"",
+    "difficulty": "medium",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "92d33446-131f-43b7-9b66-704a77f61509",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 6,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "87409015-5afd-4c14-b425-8e357552bd83",
+    "question": "Phủ định của mệnh đề \"5 + π > 10\" là mệnh đề nào sau đây?",
+    "type": "mcq",
+    "options": [
+      "5 + π < 10.",
+      "5 + π > 10.",
+      "5 + π ≤ 10.",
+      "5 + π ≠ 10."
+    ],
+    "answer": "5 + π ≤ 10.",
+    "difficulty": "easy",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "e40cfc75-3e3d-431f-a345-e76712576027",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 7,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "b88597c4-4533-4cd6-9091-6a618f9e471f",
+    "question": "Cho tập hợp A = (−∞; 0], B = (1; +∞), C = [0; 1]. Khi đó, (A ∪ B) ∩ C bằng:",
+    "type": "mcq",
+    "options": [
+      "{0}.",
+      "ℝ.",
+      "{0; 1}.",
+      "∅."
+    ],
+    "answer": "{0}.",
+    "difficulty": "hard",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "857469e7-a5c6-45ea-9e09-784b57c22ba6",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 8,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "ca63d47d-d1bb-4277-9a0a-47101d9c0df2",
+    "question": "Cho hai tập hợp A = [−2; 3], B = (1; +∞). Khi đó, A \\ B bằng:",
+    "type": "mcq",
+    "options": [
+      "[−2; 1].",
+      "(−2; 1].",
+      "[−2; 1).",
+      "(−2; −1)."
+    ],
+    "answer": "[−2; 1].",
+    "difficulty": "medium",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "a103e2c2-451b-45e0-b1df-945d1f088281",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 9,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "9aadb707-668a-4899-9239-8f0df4901b4c",
+    "question": "Cho A = {1; 5}, B = {1; 3; 5}. Chọn kết quả đúng trong các kết quả sau:",
+    "type": "mcq",
+    "options": [
+      "A ∩ B = {1}.",
+      "A ∩ B = {1; 3}.",
+      "A ∩ B = {1; 3; 5}.",
+      "A ∩ B = {1;5}."
+    ],
+    "answer": "A ∩ B = {1;5}.",
+    "difficulty": "easy",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "54b755d8-5e52-4110-abb6-4b63e99c5a13",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 10,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "71fc09ee-52ca-4696-9bf2-2b0179cd6cd1",
+    "question": "Cho tập A = {0; 2; 4; 6}. Số tập con gồm 2 phần tử của A là:",
+    "type": "mcq",
+    "options": [
+      "12",
+      "8",
+      "10",
+      "6"
+    ],
+    "answer": "6",
+    "difficulty": "hard",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "b1719893-4210-4629-a9fd-a8c5faf8510b",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 11,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "154088ed-757b-46dd-95d9-bee44cb42fec",
+    "question": "Trong các phát biểu sau, phát biểu nào không phải là mệnh đề?",
+    "type": "mcq",
+    "options": [
+      "2 là số nguyên âm.",
+      "Bạn có thích học môn Toán không?",
+      "13 là số nguyên tố.",
+      "Số 15 chia hết cho 2."
+    ],
+    "answer": "Bạn có thích học môn Toán không?",
+    "difficulty": "easy",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "b0b7bd9a-0132-4b27-af35-2ebc398bbd29",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 12,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "60f35106-72e1-43d1-ba11-4b00539d3eb9",
+    "question": "Trong các tập hợp sau, tập hợp nào là con của tập hợp A = {1;2;3;4;5}?",
+    "type": "mcq",
+    "options": [
+      "A₁ = {1;6}.",
+      "A₂ = {0;1;3}.",
+      "A₃ = {4;5}.",
+      "A₄ = {0}."
+    ],
+    "answer": "A₃ = {4;5}.",
+    "difficulty": "easy",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "84376bb6-6568-4f6a-b6fa-6236e8b90ca4",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 13,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "a6013718-1c2c-4659-a8f6-6d93bc20aa5e",
+    "question": "Cho các tập hợp A = [−1; 5], B = (2; 7), C = [4; +∞). Khi đó, (A ∩ B) \\ C bằng",
+    "type": "mcq",
+    "options": [
+      "(2; 4)",
+      "(2; 4]",
+      "[2; 4)",
+      "[2; 4]"
+    ],
+    "answer": "(2; 4)",
+    "difficulty": "hard",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "7662d7bf-8eec-4814-8171-6d0e967e170a",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 14,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "70f4d895-cd36-45e6-8179-91df290039c0",
+    "question": "Cho các tập hợp A = [−3; 4], B = (−1; 6], C = [2; 5]. Khi đó, (A ∪ C) \\ B bằng",
+    "type": "mcq",
+    "options": [
+      "[−3; −1]",
+      "[−3; −1] ∪ (5; 6]",
+      "[−3; −1)",
+      "[−3; −1] ∪ {2}"
+    ],
+    "answer": "[−3; −1)",
+    "difficulty": "hard",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "2ef3c703-b5d7-4660-b86c-99a3e8590c7b",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 15,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "861f5d82-97b6-4232-8b88-c08e7f8957ac",
+    "question": "Chọn mệnh đề đúng trong các mệnh đề sau.",
+    "type": "mcq",
+    "options": [
+      "∀x ∈ ℝ sao cho x + 1 > x.",
+      "∀x ∈ ℝ sao cho |x| = x.",
+      "∃x ∈ ℝ sao cho x − 3 = x².",
+      "∃x ∈ ℝ sao cho x² < 0."
+    ],
+    "answer": "∀x ∈ ℝ sao cho x + 1 > x.",
+    "difficulty": "medium",
+    "topic": "Đề 1 - Chương 1 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:53:42.423Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "af23dd7c-0ac8-43bd-9851-e84de19c332b",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 16,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "d4e1bb60-3217-488b-ba21-6502d6a59cb1",
+    "question": "Mệnh đề là gì?",
+    "type": "text",
+    "options": null,
+    "answer": "Là những khẳng định có tính đúng hoặc sai.",
+    "difficulty": "easy",
+    "topic": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:56:50.602Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": false,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "46038a1e-34c4-49e4-a55e-d4d3f393a772",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 17,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "28bbb5bd-4919-4d5d-aed7-d19f14e4e5dc",
+    "question": "Cho các phát biểu sau.Hãy xác định phát biểu nào là mệnh đề, phát biểu nào không phải mệnh đề và giải thích.\na) 15 chia hết cho 3.  b) x² = 4.",
+    "type": "text",
+    "options": null,
+    "answer": "a) Là mệnh đề. Vì có thể khẳng định đúng sai.\nb) Không phải mệnh đề. Vì chứa biến x là mệnh đề chứa biến phụ thuộc vào giá trị của x.",
+    "difficulty": "medium",
+    "topic": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:58:11.266Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": false,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "30ac0c0c-a903-4804-acf4-d7757434d07a",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 18,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "5ec51155-899d-410a-a4df-fb409a91e5f9",
+    "question": "Một lớp học có 25 học sinh chơi bóng đá, 23 học sinh chơi bóng bàn, 14 học sinh chơi cả bóng đá và bóng bàn và 6 học sinh không chơi môn nào cả. Hỏi lớp học có bao nhiêu học sinh? Điền đáp số.",
+    "type": "text",
+    "options": null,
+    "answer": "40",
+    "difficulty": "hard",
+    "topic": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T04:59:07.294Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": false,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "2511abc6-974b-4dbd-ae28-4fb3a8161648",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 19,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "95ecea45-6666-432f-ab39-bebf8d425bb8",
+    "question": "Một nhóm học sinh có 18 bạn giỏi Văn, 10 bạn giỏi Anh và 12 bạn giỏi Toán. Trong đó có 5 bạn giỏi cả Văn và Anh, 4 bạn giỏi cả Anh và Toán, 2 bạn giỏi cả ba môn. Số bạn giỏi cả Văn và Toán ít hơn số bạn giỏi Văn và Anh 2 bạn. Hỏi nhóm có bao nhiêu học sinh? Điền đáp số.",
+    "type": "text",
+    "options": null,
+    "answer": "30",
+    "difficulty": "hard",
+    "topic": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:02:53.907Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": false,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "4e50706b-4a9a-4584-a12b-e7058312f484",
+        "setId": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+        "order": 20,
+        "set": {
+          "id": "9e77cad0-2ed2-48ac-9b05-a62b79ef2f2f",
+          "title": "Đề 1 - Chương 1 - Học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "08c367cb-d70a-4305-b5be-2d9a8102f34e",
+    "question": "Trong các bất phương trình sau đây, bất phương trình nào là bất phương trình bậc nhất hai ẩn?",
+    "type": "mcq",
+    "options": [
+      "2x - y < 3",
+      "x - 2y² ≤ 1",
+      "x² - y > 0",
+      "x² - 2y³ > 3"
+    ],
+    "answer": "2x - y < 3",
+    "difficulty": "easy",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "a50788a5-af34-4d2b-8bac-41b6006c6d28",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 1,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "78dfc2c3-1b80-4a32-a7fb-399453a1755e",
+    "question": "Cho bất phương trình 2x+3y-6≤0 (1). Chọn khẳng định đúng trong các khẳng định sau.",
+    "type": "mcq",
+    "options": [
+      "Bất phương trình (1) chỉ có một nghiệm duy nhất.",
+      "Bất phương trình (1) vô nghiệm.",
+      "Bất phương trình (1) luôn có vô số nghiệm.",
+      "Bất phương trình (1) có tập nghiệm là ℝ."
+    ],
+    "answer": "Bất phương trình (1) luôn có vô số nghiệm.",
+    "difficulty": "medium",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "3fd6b4f7-960f-4c51-9446-c89bf681e6db",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 16,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "66ec7fb7-c729-4257-80a7-491e84cdb568",
+    "question": "Miền nghiệm của hệ bất phương trình $\\begin{cases}3x-4y+12\\geq0\\\\x+y\\geq5\\\\x+1>0\\end{cases}$ là miền chứa điểm nào trong các điểm sau?",
+    "type": "mcq",
+    "options": [
+      "M(1; −3).",
+      "N(4; 3).",
+      "P(−1; 5).",
+      "Q(−2; −3)."
+    ],
+    "answer": "N(4; 3).",
+    "difficulty": "medium",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "dacc6095-84c1-4da5-9a3b-8a110060c39e",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 15,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "b771ed1f-08f0-4097-99fa-7b148ffb1c5a",
+    "question": "Điểm nào sau đây thuộc miền nghiệm của bất phương trình x+y-2>0?",
+    "type": "mcq",
+    "options": [
+      "(2; 1).",
+      "(0; 0).",
+      "(1; 0).",
+      "(0; 1)."
+    ],
+    "answer": "(2; 1).",
+    "difficulty": "easy",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "b5339a22-5fd2-4875-bcc2-2f2a6a0d7de6",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 14,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "b8285c3c-529d-44ca-b93b-8809fab18850",
+    "question": "Điểm A(−1; 3) thuộc miền nghiệm của bất phương trình nào dưới đây?",
+    "type": "mcq",
+    "options": [
+      "x+3y<0",
+      "3x-y>0",
+      "-3x+2y-4>0",
+      "2x-y+4>0"
+    ],
+    "answer": "-3x+2y-4>0",
+    "difficulty": "easy",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "00d96191-0981-43f6-8be8-e8dbb86bcc09",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 13,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "381e029f-76cc-4327-9ef7-235fb6293b4c",
+    "question": "Nhân ngày Quốc tế Thiếu nhi 1 − 6, một rạp chiếu phim phục vụ các khán giả một bộ phim hoạt hình. Vé loại 1 dành cho trẻ từ 6 đến 13 tuổi giá 50 000 đồng/vé, vé loại 2 dành cho người trên 13 tuổi giá 80 000 đồng/vé. Gọi x là số vé loại 1 và y là số vé loại 2 bán được. Viết bất phương trình bậc nhất hai ẩn x, y biểu diễn điều kiện để số tiền bán vé thu được tối thiểu 10 triệu đồng.",
+    "type": "mcq",
+    "options": [
+      "5x+8y≥100",
+      "5x+8y>1000",
+      "8x+5y≥1000",
+      "5x+8y≥1000"
+    ],
+    "answer": "5x+8y≥1000",
+    "difficulty": "hard",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "97747a86-7ef8-4d77-9e7f-280e48b468a6",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 12,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "de2149fe-fedf-4c14-b270-eb22d219ece9",
+    "question": "Đường thẳng d: 7x-9y+2=0 chia mặt phẳng tọa độ làm hai nửa mặt phẳng, trong đó miền nghiệm của bất phương trình 7x-9y+2≥0 là nửa mặt phẳng",
+    "type": "mcq",
+    "options": [
+      "Có bờ là đường thẳng d và không chứa điểm O(0; 0).",
+      "Không có bờ và chứa điểm O(0; 0).",
+      "Có bờ là đường thẳng d và chứa điểm O(0; 0).",
+      "Không chứa bờ và không chứa điểm O(0; 0)."
+    ],
+    "answer": "Có bờ là đường thẳng d và chứa điểm O(0; 0).",
+    "difficulty": "hard",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "6b8d1990-b5ce-4ff5-a4c5-dcaa8acafeef",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 11,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "f46ee11e-05ff-49e7-bfe6-bd7160abce33",
+    "question": "Điểm nào không thuộc miền nghiệm của hệ bất phương trình $\\begin{cases}x+y-3\\leq0\\\\-3y+6>0\\end{cases}$",
+    "type": "mcq",
+    "options": [
+      "O(0; 0).",
+      "P(−6; 0).",
+      "N(−1; 1).",
+      "M(1; 1)."
+    ],
+    "answer": "P(−6; 0).",
+    "difficulty": "hard",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "8021a5f3-8a99-4931-9c71-95e98e05c9dc",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 10,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "daea8edf-4e37-4510-bcee-df07abd11731",
+    "question": "Tìm giá trị lớn nhất của biểu thức M(x; y) = 3x + 2y với x, y thỏa mãn hệ $\\begin{cases}x\\geq0\\\\y\\geq0\\\\x+2y\\leq4\\\\x-y\\leq1\\end{cases}$",
+    "type": "mcq",
+    "options": [
+      "8",
+      "10",
+      "6",
+      "9"
+    ],
+    "answer": "8",
+    "difficulty": "hard",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "507e6c0f-ae2c-4ab9-a769-1c7614924424",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 9,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "c3f2fd33-aec4-4753-a9b6-23f6e99a0380",
+    "question": "Điểm O(0; 0) không thuộc miền nghiệm của hệ bất phương trình nào sau đây?",
+    "type": "mcq",
+    "options": [
+      "$\\begin{cases}2x+y<0\\\\x-y>0\\end{cases}$",
+      "$\\begin{cases}2x+3y<0\\\\x+y-4<0\\end{cases}$",
+      "$\\begin{cases}x+3y>6\\\\2x+y+4<0\\end{cases}$",
+      "$\\begin{cases}x+3y<6\\\\2x+y+4\\geq0\\end{cases}$"
+    ],
+    "answer": "$\\begin{cases}2x+y<0\\\\x-y>0\\end{cases}$",
+    "difficulty": "medium",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "ec076589-7d53-47bd-a890-531430b9155e",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 8,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "f8c77b3b-addd-43b7-8a0b-8da8838c4e04",
+    "question": "Tập nghiệm của hệ bất phương trình bậc nhất hai ẩn là",
+    "type": "mcq",
+    "options": [
+      "hợp các miền nghiệm của từng bất phương trình.",
+      "giao các miền nghiệm của các bất phương trình trong hệ.",
+      "đường thẳng đi qua các nghiệm.",
+      "tập hợp các điểm nằm trên các đường thẳng biên."
+    ],
+    "answer": "giao các miền nghiệm của các bất phương trình trong hệ.",
+    "difficulty": "easy",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "b343b040-a188-485e-83d0-9dd454df4fda",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 7,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "8dbc6fe2-5deb-41a4-86d1-c19a102b1a09",
+    "question": "Bất phương trình bậc nhất hai ẩn ax+by+c<0 có điều kiện nào sau đây?",
+    "type": "mcq",
+    "options": [
+      "a=b=0",
+      "a, b, c đều khác 0.",
+      "a và b không đồng thời bằng 0.",
+      "c≠0"
+    ],
+    "answer": "a và b không đồng thời bằng 0.",
+    "difficulty": "easy",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "d176ae3b-8daf-423c-b987-4290545547c9",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 5,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "0952385b-3880-4f45-a15b-10f8b1f09c38",
+    "question": "Hệ bất phương trình nào sau đây là hệ bất phương trình bậc nhất hai ẩn?",
+    "type": "mcq",
+    "options": [
+      "$\\begin{cases}x+y-3>0\\\\2x^2-y\\leq1\\end{cases}$",
+      "$\\begin{cases}2x-y+1>0\\\\x+3y-4\\leq0\\end{cases}$",
+      "$\\begin{cases}x+y+z>0\\\\2x-y<3\\end{cases}$",
+      "$\\begin{cases}xy-1>0\\\\x+y\\leq5\\end{cases}$"
+    ],
+    "answer": "$\\begin{cases}2x-y+1>0\\\\x+3y-4\\leq0\\end{cases}$",
+    "difficulty": "easy",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "74eb3b50-663c-4da4-a9b3-311cb3c05342",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 4,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "7940377f-89b7-4b41-8114-2933a35a24b9",
+    "question": "Cho đường thẳng d: x-y+2=0 chia mặt phẳng tọa độ thành hai nửa mặt phẳng. Miền nghiệm của bất phương trình x-y+2<0 là:",
+    "type": "mcq",
+    "options": [
+      "Nửa mặt phẳng bờ d và chứa điểm O(0; 0).",
+      "Nửa mặt phẳng bờ d, không chứa điểm O(0; 0) và không kể đường thẳng d.",
+      "Nửa mặt phẳng bờ d, không chứa điểm O(0; 0) và kể cả đường thẳng d.",
+      "Nửa mặt phẳng bờ d và không kể đường thẳng d."
+    ],
+    "answer": "Nửa mặt phẳng bờ d, không chứa điểm O(0; 0) và không kể đường thẳng d.",
+    "difficulty": "medium",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "60fed976-3604-4328-9318-3db2b1708399",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 3,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "73fe6793-643d-4efb-82ca-895f423bae30",
+    "question": "Nửa mặt phẳng không chứa điểm O(0;0) là miền nghiệm của bất phương trình nào trong các bất phương trình sau?",
+    "type": "mcq",
+    "options": [
+      "x + 2y > 1",
+      "2x + y > 1",
+      "2x + y < 1",
+      "2x – y > 1"
+    ],
+    "answer": "2x + y > 1",
+    "difficulty": "medium",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "c35fe3e5-d34d-4627-8ca9-d8da01492b68",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 2,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "9a072be5-5a7c-49ad-b2f1-4e67a5a1a77c",
+    "question": "Miền nghiệm của bất phương trình 2x-y≤4 là",
+    "type": "mcq",
+    "options": [
+      "nửa mặt phẳng có bờ là đường thẳng 2x-y=4 và bao gồm đường thẳng đó.",
+      "nửa mặt phẳng có bờ là đường thẳng 2x-y=4 và không bao gồm đường thẳng đó.",
+      "đường thẳng 2x-y=4",
+      "toàn bộ mặt phẳng tọa độ."
+    ],
+    "answer": "nửa mặt phẳng có bờ là đường thẳng 2x-y=4 và bao gồm đường thẳng đó.",
+    "difficulty": "easy",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:24:56.246Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": true,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "ac8f08e0-d13a-4ba4-b753-0871cf55d37d",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 6,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "76f31e51-6e18-4af2-babf-1de56d23870e",
+    "question": "Một nhà khoa học đã nghiên cứu về tác động phối hợp của hai loại Vitamin A và B đã thu được kết quả như sau: Trong một ngày, mỗi người cần từ 400 đến 1000 đơn vị Vitamin cả A lẫn B và có thể tiếp nhận không quá 600 đơn vị vitamin A và không quá 500 đơn vị vitamin B. Do tác động phối hợp của hai loại vitamin trên nên mỗi ngày một người sử dụng số đơn vị vitamin B không ít hơn một nửa số đơn vị vitamin A và không nhiều hơn ba lần số đơn vị vitamin A. Tính số đơn vị vitamin mỗi loại ở trên để một người dùng mỗi ngày sao cho chi phí rẻ nhất, biết rằng mỗi đơn vị vitamin A có giá 9 đồng và mỗi đơn vị vitamin B có giá 7,5 đồng. Điền đáp số.",
+    "type": "text",
+    "options": null,
+    "answer": "100 đơn vị Vitamin A, 300 đơn vị Vitamin B",
+    "difficulty": "hard",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:29:46.603Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": false,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "da41968e-9ab9-4c1d-bc09-6e5db523112a",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 17,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "d8f030c1-959f-47ce-9913-d29e36776553",
+    "question": "Công ty Bao bì Dược cần sản xuất 3 loại hộp giấy: đựng thuốc B, đựng cao Sao vàng và đựng \"Quy sâm đại bổ hoàn\". Để sản xuất các loại hộp này, công ty dùng các tấm bìa có kích thước giống nhau. Mỗi tấm bìa có hai cách cắt khác nhau. Cách thứ nhất cắt được 3 hộp B, 1 hộp cao Sao vàng và 6 hộp Quy sâm. Cách thứ hai cắt được 2 hộp B, 3 hộp cao Sao vàng và 1 hộp Quy sâm.\nTheo kế hoạch, số hộp Quy sâm phải có là 900 hộp, số hộp B tối thiểu là 900 hộp, số hộp cao sao vàng tối thiểu là 1000 hộp. Cần phương án sao cho tổng số tấm bìa phải dùng là ít nhất? Điền đáp số.",
+    "type": "text",
+    "options": null,
+    "answer": "Cắt theo cách một 100 tấm, cắt theo cách hai 300 tấm",
+    "difficulty": "hard",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:35:38.073Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": false,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "e9f6f776-89a3-429b-8369-3e6f7e6a27f1",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 18,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "060003e2-496d-415a-87b3-68c213aed39a",
+    "question": "Cho hệ bất phương trình bậc nhất hai ẩn: $\\begin{cases} x-y+2\\geq 0\\\\ 2x-y-1\\leq 0\\\\ x-y-2<0 \\end{cases}$. Giá trị lớn nhất của biểu thức T = 3x + 2y với (x; y) là nghiệm của hệ bất phương trình đã cho là? Điền đáp số.",
+    "type": "text",
+    "options": null,
+    "answer": "19",
+    "difficulty": "medium",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:42:23.500Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": false,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "ec99c750-1b3b-4a68-977b-1d22547a0210",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 19,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  },
+  {
+    "id": "93175d7c-f48f-4e72-a159-4f8b8502d1bf",
+    "question": "Cho bất phương trình bậc nhất hai ẩn sau: 3x - 5y + 2 > 0. Hãy xác định các hệ số a, b và c của bất phương trình đã cho.",
+    "type": "text",
+    "options": null,
+    "answer": "a = 3, b = -5, c= 2",
+    "difficulty": "easy",
+    "topic": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+    "createdBy": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+    "createdAt": "2026-08-29T05:44:19.587Z",
+    "topicId": null,
+    "classId": null,
+    "tags": [],
+    "isPublic": false,
+    "visibility": "PRIVATE",
+    "creator": {
+      "id": "e21459d2-6721-4ecf-a3f8-9957f302327f",
+      "username": "nckh2026bhta",
+      "role": "teacher"
+    },
+    "class": null,
+    "topicRef": null,
+    "setItems": [
+      {
+        "id": "9f26a3cf-646a-44e5-8247-87c1176ca18f",
+        "setId": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+        "order": 20,
+        "set": {
+          "id": "78e5cf48-fbfc-4942-b606-1e9dc99dcad4",
+          "title": "Đề 2 - Chương 2 học kì 1 - Lớp 10",
+          "classId": "11bcc914-ebad-4cf3-819b-eebd1832f4d6"
+        }
+      }
+    ],
+    "favoritedBy": [],
+    "referencedInAttemptsCount": 2,
+    "referencedInSetItemsCount": 1,
+    "referencedInFavoritesCount": 0
+  }
+]
